@@ -1,0 +1,345 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:provider/provider.dart';
+import '../../core/theme.dart';
+import '../../core/constants.dart';
+import '../../models/workspace_model.dart';
+import '../../providers/workspace_provider.dart';
+class ClubSelectScreen extends StatefulWidget {
+  const ClubSelectScreen({super.key});
+
+  @override
+  State<ClubSelectScreen> createState() => _ClubSelectScreenState();
+}
+
+class _ClubSelectScreenState extends State<ClubSelectScreen> {
+  final _searchCtrl = TextEditingController();
+  List<ClubSearchResult> _results = [];
+  bool _searching = false;
+  ClubSearchResult? _selected;
+  bool _requesting = false;
+  String? _requestedStatus;
+  String? _workspaceId;
+
+  @override
+  void initState() {
+    super.initState();
+    _doSearch('');
+  }
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _doSearch(String q) async {
+    setState(() => _searching = true);
+    final provider = context.read<WorkspaceProvider>();
+    final results = await provider.searchClubs(q);
+    if (mounted) setState(() { _results = results; _searching = false; });
+  }
+
+  Future<void> _requestAccess() async {
+    if (_selected == null) return;
+    setState(() => _requesting = true);
+    final provider = context.read<WorkspaceProvider>();
+    final ws = await provider.requestAccess(_selected!.id, _selected!.name);
+    if (mounted) {
+      setState(() {
+        _requesting = false;
+        _requestedStatus = ws?.status ?? 'pending';
+        _workspaceId = ws?.id;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header
+            Padding(
+              padding: const EdgeInsets.all(AppConstants.spacingL),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Select Club', style: AppTextStyles.displayMedium)
+                      .animate().fadeIn(duration: 400.ms).slideX(begin: -0.1),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Search for your club to set up your workspace',
+                    style: AppTextStyles.bodyMedium,
+                  ).animate().fadeIn(duration: 400.ms, delay: 100.ms),
+                ],
+              ),
+            ),
+
+            // Search bar
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppConstants.spacingL),
+              child: TextField(
+                controller: _searchCtrl,
+                style: AppTextStyles.bodyLarge,
+                decoration: InputDecoration(
+                  hintText: 'Search clubs...',
+                  prefixIcon: _searching
+                      ? const Padding(
+                          padding: EdgeInsets.all(12),
+                          child: SizedBox(
+                            width: 16, height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: AppColors.accent,
+                            ),
+                          ),
+                        )
+                      : const Icon(Icons.search, color: AppColors.textMuted, size: 20),
+                ),
+                onChanged: (v) {
+                  Future.delayed(const Duration(milliseconds: 400), () {
+                    if (_searchCtrl.text == v) _doSearch(v);
+                  });
+                },
+              ).animate().fadeIn(duration: 400.ms, delay: 200.ms),
+            ),
+
+            const SizedBox(height: AppConstants.spacingM),
+
+            // Results
+            if (_requestedStatus == null)
+              Expanded(
+                child: ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: AppConstants.spacingL),
+                  itemCount: _results.length,
+                  itemBuilder: (context, i) {
+                    final club = _results[i];
+                    final isSelected = _selected?.id == club.id;
+                    return _ClubCard(
+                      club: club,
+                      isSelected: isSelected,
+                      index: i,
+                      onTap: () => setState(() => _selected = isSelected ? null : club),
+                    );
+                  },
+                ),
+              ),
+
+            // Request status UI
+            if (_requestedStatus != null)
+              Expanded(
+                child: _RequestStatusView(
+                  clubName: _selected?.name ?? '',
+                  status: _requestedStatus!,
+                  workspaceId: _workspaceId,
+                ),
+              ),
+
+            // Bottom button
+            if (_selected != null && _requestedStatus == null)
+              Padding(
+                padding: const EdgeInsets.all(AppConstants.spacingL),
+                child: _RequestButton(
+                  clubName: _selected!.name,
+                  loading: _requesting,
+                  onTap: _requestAccess,
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ClubCard extends StatelessWidget {
+  final ClubSearchResult club;
+  final bool isSelected;
+  final int index;
+  final VoidCallback onTap;
+
+  const _ClubCard({
+    required this.club,
+    required this.isSelected,
+    required this.index,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: AppConstants.animFast,
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.accent.withOpacity(0.1) : AppColors.surface,
+          borderRadius: BorderRadius.circular(AppConstants.radiusL),
+          border: Border.all(
+            color: isSelected ? AppColors.accent : AppColors.surfaceBorder,
+            width: isSelected ? 1.5 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            // Crest placeholder
+            Container(
+              width: 48, height: 48,
+              decoration: BoxDecoration(
+                color: AppColors.surfaceElevated,
+                shape: BoxShape.circle,
+                border: Border.all(color: AppColors.surfaceBorder),
+              ),
+              child: Center(
+                child: Text(
+                  club.name.substring(0, 2).toUpperCase(),
+                  style: AppTextStyles.labelMedium.copyWith(color: AppColors.accent),
+                ),
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(club.name, style: AppTextStyles.headlineSmall),
+                  if (club.country != null)
+                    Text('${club.country}${club.founded != null ? ' · Est. ${club.founded}' : ''}',
+                        style: AppTextStyles.bodySmall),
+                ],
+              ),
+            ),
+            if (isSelected)
+              Container(
+                width: 24, height: 24,
+                decoration: const BoxDecoration(color: AppColors.accent, shape: BoxShape.circle),
+                child: const Icon(Icons.check, size: 14, color: Colors.black),
+              ),
+          ],
+        ),
+      ),
+    )
+        .animate(delay: Duration(milliseconds: index * 50))
+        .fadeIn(duration: 350.ms)
+        .slideX(begin: 0.05, end: 0);
+  }
+}
+
+class _RequestStatusView extends StatelessWidget {
+  final String clubName;
+  final String status;
+  final String? workspaceId;
+
+  const _RequestStatusView({
+    required this.clubName,
+    required this.status,
+    this.workspaceId,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isPending = status == 'pending';
+    final color = isPending ? AppColors.riskMed : AppColors.riskLow;
+    final icon = isPending ? Icons.hourglass_top_rounded : Icons.check_circle_rounded;
+    final label = isPending ? 'Request Pending' : 'Access Approved!';
+    final sub = isPending
+        ? 'Your request for $clubName has been submitted. An admin will review it shortly.'
+        : 'Your workspace for $clubName is now active. Returning to home...';
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppConstants.spacingXL),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 80, height: 80,
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.12),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: color, size: 40),
+            )
+                .animate()
+                .scale(duration: 500.ms, curve: Curves.elasticOut),
+            const SizedBox(height: 24),
+            Text(label, style: AppTextStyles.displaySmall.copyWith(color: color))
+                .animate(delay: 200.ms).fadeIn(),
+            const SizedBox(height: 12),
+            Text(sub, style: AppTextStyles.bodyMedium, textAlign: TextAlign.center)
+                .animate(delay: 300.ms).fadeIn(),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _RequestButton extends StatefulWidget {
+  final String clubName;
+  final bool loading;
+  final VoidCallback onTap;
+
+  const _RequestButton({required this.clubName, required this.loading, required this.onTap});
+
+  @override
+  State<_RequestButton> createState() => _RequestButtonState();
+}
+
+class _RequestButtonState extends State<_RequestButton> with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 120));
+  }
+
+  @override
+  void dispose() { _ctrl.dispose(); super.dispose(); }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) => _ctrl.forward(),
+      onTapUp: (_) { _ctrl.reverse(); if (!widget.loading) widget.onTap(); },
+      onTapCancel: () => _ctrl.reverse(),
+      child: AnimatedBuilder(
+        animation: _ctrl,
+        builder: (_, child) => Transform.scale(
+          scale: 1.0 - _ctrl.value * 0.03,
+          child: child,
+        ),
+        child: Container(
+          height: 54,
+          decoration: BoxDecoration(
+            gradient: AppColors.gradientAccent,
+            borderRadius: BorderRadius.circular(14),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.accent.withOpacity(0.35),
+                blurRadius: 20,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Center(
+            child: widget.loading
+                ? const SizedBox(
+                    width: 22, height: 22,
+                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
+                  )
+                : Text(
+                    'Request Access · ${widget.clubName}',
+                    style: AppTextStyles.labelLarge.copyWith(color: Colors.white),
+                  ),
+          ),
+        ),
+      ),
+    ).animate().fadeIn(duration: 300.ms).slideY(begin: 0.5, end: 0, curve: Curves.elasticOut);
+  }
+}

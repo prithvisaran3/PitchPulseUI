@@ -13,6 +13,7 @@ import 'package:fl_chart/fl_chart.dart';
 import '../../widgets/home/next_match_card.dart';
 import '../../widgets/home/player_risk_tile.dart';
 import '../../widgets/common/gradient_badge.dart';
+import '../../widgets/common/pulse_loader.dart';
 import '../player/player_detail_screen.dart';
 import 'suggested_xi_screen.dart';
 
@@ -445,10 +446,9 @@ class _SimulateButton extends StatelessWidget {
             children: [
               if (loading)
                 const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(
-                      color: AppColors.riskMed, strokeWidth: 2),
+                  width: 24,
+                  height: 24,
+                  child: PulseLoader(color: AppColors.riskMed),
                 )
               else
                 const Icon(Icons.play_circle_outline,

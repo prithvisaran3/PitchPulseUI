@@ -10,98 +10,6 @@ class MatchDetailScreen extends StatelessWidget {
 
   const MatchDetailScreen({super.key, required this.report});
 
-  // Demo player stats for this match
-  List<Map<String, dynamic>> get _playerStats => [
-        {
-          'name': 'J. Bellingham',
-          'pos': 'AM',
-          'mins': 90,
-          'rating': 8.2,
-          'impact': 'HIGH',
-          'delta': '+12'
-        },
-        {
-          'name': 'D. Carvajal',
-          'pos': 'RB',
-          'mins': 90,
-          'rating': 6.8,
-          'impact': 'HIGH',
-          'delta': '+18'
-        },
-        {
-          'name': 'Vinícius Jr.',
-          'pos': 'LW',
-          'mins': 83,
-          'rating': 7.9,
-          'impact': 'LOW',
-          'delta': '+5'
-        },
-        {
-          'name': 'K. Mbappé',
-          'pos': 'ST',
-          'mins': 90,
-          'rating': 7.4,
-          'impact': 'MED',
-          'delta': '+8'
-        },
-        {
-          'name': 'F. Valverde',
-          'pos': 'CM',
-          'mins': 77,
-          'rating': 7.1,
-          'impact': 'MED',
-          'delta': '+6'
-        },
-        {
-          'name': 'L. Modrić',
-          'pos': 'CM',
-          'mins': 65,
-          'rating': 6.9,
-          'impact': 'MED',
-          'delta': '+9'
-        },
-        {
-          'name': 'A. Tchouameni',
-          'pos': 'CDM',
-          'mins': 90,
-          'rating': 7.0,
-          'impact': 'LOW',
-          'delta': '+3'
-        },
-        {
-          'name': 'É. Militão',
-          'pos': 'CB',
-          'mins': 90,
-          'rating': 7.3,
-          'impact': 'MED',
-          'delta': '+6'
-        },
-        {
-          'name': 'D. Alaba',
-          'pos': 'CB',
-          'mins': 90,
-          'rating': 7.1,
-          'impact': 'LOW',
-          'delta': '+2'
-        },
-        {
-          'name': 'F. Mendy',
-          'pos': 'LB',
-          'mins': 90,
-          'rating': 6.5,
-          'impact': 'MED',
-          'delta': '+7'
-        },
-        {
-          'name': 'T. Courtois',
-          'pos': 'GK',
-          'mins': 90,
-          'rating': 7.8,
-          'impact': 'LOW',
-          'delta': '+1'
-        },
-      ];
-
   @override
   Widget build(BuildContext context) {
     final resultColor = report.resultColor;
@@ -187,7 +95,8 @@ class MatchDetailScreen extends StatelessWidget {
                         color: resultColor.withValues(alpha: 0.12),
                         borderRadius:
                             BorderRadius.circular(AppConstants.radiusCircle),
-                        border: Border.all(color: resultColor.withValues(alpha: 0.3)),
+                        border: Border.all(
+                            color: resultColor.withValues(alpha: 0.3)),
                       ),
                       child: Text(
                         report.result == 'W'
@@ -233,7 +142,8 @@ class MatchDetailScreen extends StatelessWidget {
                         borderRadius:
                             BorderRadius.circular(AppConstants.radiusL),
                         border: Border.all(
-                            color: AppColors.textPrimary.withValues(alpha: 0.2)),
+                            color:
+                                AppColors.textPrimary.withValues(alpha: 0.2)),
                       ),
                       child: Text(report.headline!,
                           style: AppTextStyles.bodyMedium.copyWith(
@@ -243,23 +153,6 @@ class MatchDetailScreen extends StatelessWidget {
                     ).animate().fadeIn(delay: 100.ms),
                     const SizedBox(height: AppConstants.spacingL),
                   ],
-
-                  // Player minutes
-                  Row(children: [
-                    const Icon(Icons.people_outline_rounded,
-                        size: 14, color: AppColors.textSecondary),
-                    const SizedBox(width: 8),
-                    Text('Player Minutes & Risk Impact',
-                        style: AppTextStyles.headlineSmall),
-                  ]).animate().fadeIn(delay: 200.ms),
-                  const SizedBox(height: 10),
-
-                  ..._playerStats.asMap().entries.map((entry) {
-                    final i = entry.key;
-                    final stat = entry.value;
-                    return _PlayerStatRow(stat: stat, index: i);
-                  }),
-
                   const SizedBox(height: AppConstants.spacingXXL),
                 ],
               ),
@@ -332,63 +225,4 @@ class _Divider extends StatelessWidget {
         color: AppColors.surfaceBorder,
         margin: const EdgeInsets.symmetric(horizontal: 4),
       );
-}
-
-class _PlayerStatRow extends StatelessWidget {
-  final Map<String, dynamic> stat;
-  final int index;
-  const _PlayerStatRow({required this.stat, required this.index});
-
-  @override
-  Widget build(BuildContext context) {
-    final impactColor = AppColors.colorForRisk(stat['impact'] as String);
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.surfaceBorder),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: impactColor.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Center(
-                child: Text(stat['pos'] as String,
-                    style: AppTextStyles.caption.copyWith(color: impactColor))),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child:
-                Text(stat['name'] as String, style: AppTextStyles.labelMedium),
-          ),
-          Text('${stat['mins']}\'', style: AppTextStyles.monoSmall),
-          const SizedBox(width: 14),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-            decoration: BoxDecoration(
-              color: impactColor.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Row(children: [
-              Icon(Icons.arrow_upward_rounded, size: 10, color: impactColor),
-              const SizedBox(width: 2),
-              Text(stat['delta'] as String,
-                  style: AppTextStyles.caption.copyWith(color: impactColor)),
-            ]),
-          ),
-        ],
-      ),
-    )
-        .animate(delay: Duration(milliseconds: index * 50))
-        .fadeIn(duration: 300.ms)
-        .slideX(begin: 0.05, end: 0);
-  }
 }

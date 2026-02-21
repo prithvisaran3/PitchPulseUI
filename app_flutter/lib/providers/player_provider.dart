@@ -56,9 +56,8 @@ class PlayerProvider extends ChangeNotifier {
       _detailState = PlayerLoadState.loaded;
     } catch (e) {
       debugPrint('🔴 [PlayerProvider] Detail Error for ${player.id}: $e');
-      _currentDetail = PlayerDetailModel.demo(player);
-      _detailCache[player.id] = _currentDetail!;
-      _detailState = PlayerLoadState.loaded;
+      _detailState = PlayerLoadState.error;
+      _error = e.toString();
     }
     notifyListeners();
   }
@@ -86,10 +85,8 @@ class PlayerProvider extends ChangeNotifier {
       _similarState = PlayerLoadState.loaded;
     } catch (e) {
       debugPrint('🔴 [PlayerProvider] Similar Cases Error for $playerId: $e');
-      await Future.delayed(const Duration(milliseconds: 800));
-      _currentSimilar = SimilarCase.demoList();
-      _similarCache[playerId] = _currentSimilar!;
-      _similarState = PlayerLoadState.loaded;
+      _similarState = PlayerLoadState.error;
+      _error = e.toString();
     }
     notifyListeners();
   }
@@ -115,10 +112,8 @@ class PlayerProvider extends ChangeNotifier {
       _planState = PlayerLoadState.loaded;
     } catch (e) {
       debugPrint('🔴 [PlayerProvider] Action Plan Error for ${player.id}: $e');
-      await Future.delayed(const Duration(seconds: 2));
-      _currentPlan = ActionPlan.demo(player);
-      _planCache[player.id] = _currentPlan!;
-      _planState = PlayerLoadState.loaded;
+      _planState = PlayerLoadState.error;
+      _error = e.toString();
     }
     notifyListeners();
   }

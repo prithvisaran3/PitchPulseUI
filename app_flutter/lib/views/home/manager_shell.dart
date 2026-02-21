@@ -38,9 +38,13 @@ class _ManagerShellState extends State<ManagerShell>
         vsync: this, duration: const Duration(milliseconds: 300));
     _fabCtrl.forward();
 
-    // Preload workspace data
+    // Only load if not already loaded — prevents re-triggering the fetch
+    // that AuthGate already initiated on login.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<WorkspaceProvider>().loadWorkspaces();
+      final wp = context.read<WorkspaceProvider>();
+      if (wp.workspaceState == LoadState.idle) {
+        wp.loadWorkspaces();
+      }
     });
   }
 

@@ -6,6 +6,7 @@ import '../../core/theme.dart';
 import '../../core/constants.dart';
 import '../../models/workspace_model.dart';
 import '../../providers/workspace_provider.dart';
+import '../../widgets/common/pulse_loader.dart';
 
 class AdminRequestsScreen extends StatefulWidget {
   const AdminRequestsScreen({super.key});
@@ -101,8 +102,7 @@ class _AdminRequestsScreenState extends State<AdminRequestsScreen> {
             // List
             Expanded(
               child: provider.adminState == LoadState.loading
-                  ? const Center(
-                      child: CircularProgressIndicator(color: AppColors.accent))
+                  ? const Center(child: PulseLoader(color: AppColors.accent))
                   : provider.pendingRequests.isEmpty
                       ? _EmptyState()
                       : RefreshIndicator(
@@ -207,7 +207,8 @@ class _RequestCardState extends State<_RequestCard> {
                 decoration: BoxDecoration(
                   color: AppColors.surfaceElevated,
                   shape: BoxShape.circle,
-                  border: Border.all(color: AppColors.riskMed.withValues(alpha: 0.3)),
+                  border: Border.all(
+                      color: AppColors.riskMed.withValues(alpha: 0.3)),
                 ),
                 child: Center(
                   child: Text(
@@ -234,7 +235,8 @@ class _RequestCardState extends State<_RequestCard> {
                   color: AppColors.riskMed.withValues(alpha: 0.12),
                   borderRadius:
                       BorderRadius.circular(AppConstants.radiusCircle),
-                  border: Border.all(color: AppColors.riskMed.withValues(alpha: 0.3)),
+                  border: Border.all(
+                      color: AppColors.riskMed.withValues(alpha: 0.3)),
                 ),
                 child: Text('PENDING',
                     style: AppTextStyles.labelSmall
@@ -279,9 +281,8 @@ class _RequestCardState extends State<_RequestCard> {
                 child: _approving
                     ? const SizedBox(
                         width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(
-                            color: AppColors.riskLow, strokeWidth: 2),
+                        height: 24,
+                        child: PulseLoader(color: AppColors.riskLow),
                       )
                     : Row(
                         mainAxisSize: MainAxisSize.min,

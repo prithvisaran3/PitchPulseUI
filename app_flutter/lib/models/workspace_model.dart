@@ -20,17 +20,26 @@ class WorkspaceModel {
   bool get isPending => status == 'pending';
   bool get isApproved => status == 'approved';
 
-  factory WorkspaceModel.fromJson(Map<String, dynamic> json) => WorkspaceModel(
-        id: json['id'] as String,
-        clubId: json['club_id'] as String,
-        clubName: json['club_name'] as String,
-        clubCrestUrl: json['club_crest_url'] as String?,
-        status: json['status'] as String? ?? 'pending',
-        managerId: json['manager_id'] as String? ?? 'unknown',
-        createdAt: json['created_at'] != null
-            ? DateTime.tryParse(json['created_at'] as String)
-            : null,
-      );
+  factory WorkspaceModel.fromJson(Map<String, dynamic> json) {
+    // Roshini's backend returns `team_name` instead of `club_name`,
+    // and doesn't send `club_id` or `manager_id`.
+    final clubName =
+        (json['club_name'] ?? json['team_name'] ?? 'Unknown Club') as String;
+    final clubId = (json['club_id'] ??
+        json['provider_team_id']?.toString() ??
+        'unknown') as String;
+    return WorkspaceModel(
+      id: json['id'] as String,
+      clubId: clubId,
+      clubName: clubName,
+      clubCrestUrl: json['club_crest_url'] as String?,
+      status: json['status'] as String? ?? 'pending',
+      managerId: json['manager_id'] as String? ?? 'unknown',
+      createdAt: json['created_at'] != null
+          ? DateTime.tryParse(json['created_at'] as String)
+          : null,
+    );
+  }
 
   static WorkspaceModel demo() => WorkspaceModel(
         id: 'demo-workspace-001',
@@ -49,6 +58,7 @@ class ClubSearchResult {
   final String? country;
   final String? crestUrl;
   final int? founded;
+  final int? providerTeamId;
 
   const ClubSearchResult({
     required this.id,
@@ -56,6 +66,7 @@ class ClubSearchResult {
     this.country,
     this.crestUrl,
     this.founded,
+    this.providerTeamId,
   });
 
   factory ClubSearchResult.fromJson(Map<String, dynamic> json) =>
@@ -65,6 +76,7 @@ class ClubSearchResult {
         country: json['country'] as String?,
         crestUrl: json['crest_url'] as String?,
         founded: json['founded'] as int?,
+        providerTeamId: json['provider_team_id'] as int?,
       );
 
   static List<ClubSearchResult> demoResults() => [
@@ -72,26 +84,31 @@ class ClubSearchResult {
             id: 'real-madrid',
             name: 'Real Madrid',
             country: 'Spain',
-            founded: 1902),
+            founded: 1902,
+            providerTeamId: 541),
         const ClubSearchResult(
             id: 'barcelona',
             name: 'FC Barcelona',
             country: 'Spain',
-            founded: 1899),
+            founded: 1899,
+            providerTeamId: 529),
         const ClubSearchResult(
             id: 'man-city',
             name: 'Manchester City',
             country: 'England',
-            founded: 1880),
+            founded: 1880,
+            providerTeamId: 50),
         const ClubSearchResult(
             id: 'psg',
             name: 'Paris Saint-Germain',
             country: 'France',
-            founded: 1970),
+            founded: 1970,
+            providerTeamId: 85),
         const ClubSearchResult(
             id: 'bayern',
             name: 'Bayern Munich',
             country: 'Germany',
-            founded: 1900),
+            founded: 1900,
+            providerTeamId: 157),
       ];
 }

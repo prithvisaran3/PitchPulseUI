@@ -52,38 +52,43 @@ class WorkspaceProvider extends ChangeNotifier {
       return list
           .map((e) => ClubSearchResult.fromJson(e as Map<String, dynamic>))
           .toList();
-    } catch (_) {
-      // Return demo results when backend is not available
-      await Future.delayed(const Duration(milliseconds: 600));
-      return ClubSearchResult.demoResults()
-          .where((c) => c.name.toLowerCase().contains(query.toLowerCase()))
-          .toList();
+    } catch (e) {
+      debugPrint('🔴 [WorkspaceProvider] Club search error: $e');
+      return [];
     }
   }
 
   // ── Request Access ──────────────────────────────────────────────────────────
-  Future<WorkspaceModel?> requestAccess(String clubId, String clubName) async {
+  // Backend auto-approves and returns the workspace with status: "approved".
+  // We grab the workspace ID, set it as active, load home, and sync in background.
+  Future<void> requestAccess(String clubId, String clubName,
+      {int? providerTeamId}) async {
+    _workspaceState = LoadState.loading;
+    notifyListeners();
+
     try {
-      final data = await _api.post('/workspaces/request_access', body: {
-        'club_id': clubId,
-        'club_name': clubName,
-      });
-      final ws = WorkspaceModel.fromJson(data as Map<String, dynamic>);
-      _workspaces.add(ws);
+      final body = providerTeamId != null
+          ? {'provider_team_id': providerTeamId}
+          : {'club_id': clubId, 'club_name': clubName};
+
+      debugPrint('🟡 [WorkspaceProvider] request_access payload: $body');
+      final data = await _api.post('/workspaces/request_access', body: body)
+          as Map<String, dynamic>;
+      debugPrint('🟢 [WorkspaceProvider] request_access Response: $data');
+
+      // Parse the instantly-approved workspace
+      final ws = WorkspaceModel.fromJson(data);
+      _workspaces = [ws];
+      _activeWorkspace = ws;
+      _workspaceState = LoadState.loaded;
       notifyListeners();
-      return ws;
-    } catch (_) {
-      // Demo mode: return pending workspace
-      final ws = WorkspaceModel(
-        id: 'ws-${DateTime.now().millisecondsSinceEpoch}',
-        clubId: clubId,
-        clubName: clubName,
-        status: 'pending',
-        managerId: 'demo-uid',
-      );
-      _workspaces.add(ws);
-      notifyListeners();
-      return ws;
+
+      // Load home data immediately so home screen is populated
+      await loadHome(ws.id);
+    } catch (e) {
+      debugPrint('🔴 [WorkspaceProvider] request_access Error: $e');
+      // Fall back: reload from /me in case workspace was already created
+      await loadWorkspaces();
     }
   }
 
@@ -105,20 +110,13 @@ class WorkspaceProvider extends ChangeNotifier {
       _workspaceState = LoadState.loaded;
     } catch (e) {
       debugPrint('🔴 [WorkspaceProvider] Error loading workspaces: $e');
-      _workspaces = [WorkspaceModel.demo()];
-      _activeWorkspace = _workspaces.first;
-      _workspaceState = LoadState.loaded;
+      _workspaces = [];
+      _workspaceState = LoadState.error;
     }
     notifyListeners();
 
-    // Auto-sync Roshini's workspace on first use, then load home
     if (_activeWorkspace != null) {
-      final wsId = _activeWorkspace!.id;
-      if (_squad.isEmpty) {
-        // Trigger the initial data sync (safe to call repeatedly — idempotent)
-        await _api.triggerInitialSync(wsId);
-      }
-      await loadHome(wsId);
+      await loadHome(_activeWorkspace!.id);
     }
   }
 
@@ -132,51 +130,69 @@ class WorkspaceProvider extends ChangeNotifier {
       debugPrint(
           '🟢 [WorkspaceProvider] Home Sync Response for ws=$workspaceId: $data');
 
-      // Parse upcoming fixtures
+      // Update workspace club name from home response if available
+      final wsData = data['workspace'] as Map<String, dynamic>?;
+      if (wsData != null && _activeWorkspace != null) {
+        final teamName = wsData['team_name'] as String?;
+        if (teamName != null && teamName != 'Requested Team') {
+          _activeWorkspace = WorkspaceModel(
+            id: _activeWorkspace!.id,
+            clubId: _activeWorkspace!.clubId,
+            clubName: teamName,
+            clubCrestUrl: _activeWorkspace!.clubCrestUrl,
+            status: _activeWorkspace!.status,
+            managerId: _activeWorkspace!.managerId,
+            createdAt: _activeWorkspace!.createdAt,
+          );
+        }
+      }
+
+      final effectiveTeamName = _activeWorkspace?.clubName ?? 'My Club';
+
+      // Parse upcoming fixtures — backend sends `next_fixture` (singular)
+      _upcomingFixtures = [];
       if (data['upcoming_fixtures'] != null) {
         final fixturesJson = data['upcoming_fixtures'] as List<dynamic>;
         _upcomingFixtures = fixturesJson
-            .map((e) => FixtureModel.fromJson(e as Map<String, dynamic>))
+            .map((e) => FixtureModel.fromJson(
+                e as Map<String, dynamic>, effectiveTeamName))
             .toList();
       } else if (data['next_fixture'] != null) {
-        // Fallback for older API shape
         _upcomingFixtures = [
-          FixtureModel.fromJson(data['next_fixture'] as Map<String, dynamic>)
+          FixtureModel.fromJson(
+              data['next_fixture'] as Map<String, dynamic>, effectiveTeamName)
         ];
       }
 
-      final playersJson = data['squad'] as List<dynamic>;
-      _squad = playersJson
+      // Parse recent fixtures to populate reports
+      final recent = data['recent_fixtures'] as List<dynamic>?;
+      if (recent != null && recent.isNotEmpty) {
+        _reports = recent
+            .map((e) => MatchReportModel.fromJson(e as Map<String, dynamic>))
+            .toList();
+      } else {
+        _reports = [];
+      }
+
+      // Parse squad
+      final squadJson = data['squad'] as List<dynamic>? ?? [];
+      if (squadJson.isNotEmpty) {
+        debugPrint(
+            '🔍 [WorkspaceProvider] First squad member raw JSON: ${squadJson.first}');
+      }
+      _squad = squadJson
           .map((e) => PlayerModel.fromJson(e as Map<String, dynamic>))
           .toList();
       _homeState = LoadState.loaded;
     } catch (e) {
       debugPrint('🔴 [WorkspaceProvider] Home Sync Error: $e');
-      _upcomingFixtures = FixtureModel.demoUpcomingList();
-      _squad = PlayerModel.demoSquad();
-      _homeState = LoadState.loaded;
+      _upcomingFixtures = [];
+      _squad = [];
+      _homeState = LoadState.error;
     }
     notifyListeners();
   }
 
-  // ── Load Reports ────────────────────────────────────────────────────────────
-  Future<void> loadReports(String workspaceId) async {
-    try {
-      final data =
-          await _api.get('/workspaces/$workspaceId/reports') as List<dynamic>;
-      debugPrint(
-          '🟢 [WorkspaceProvider] Reports Response for ws=$workspaceId: $data');
-      _reports = data
-          .map((e) => MatchReportModel.fromJson(e as Map<String, dynamic>))
-          .toList();
-    } catch (e) {
-      debugPrint('🔴 [WorkspaceProvider] Reports Error: $e');
-      _reports = MatchReportModel.demoList();
-    }
-    notifyListeners();
-  }
-
-  // ── Suggested XI (AI) ───────────────────────────────────────────────────────
   Future<Map<String, dynamic>> generateSuggestedXi(
       String workspaceId, Map<String, dynamic> payload) async {
     try {

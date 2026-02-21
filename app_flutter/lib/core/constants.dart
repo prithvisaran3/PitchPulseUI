@@ -4,7 +4,7 @@ class AppConstants {
   // Backend base URL — update when Roshini deploys
   static const String baseUrl = String.fromEnvironment(
     'BASE_URL',
-    defaultValue: 'http://localhost:8000',
+    defaultValue: 'https://ferreous-semisaline-sean.ngrok-free.dev',
   );
 
   // Roshini's real workspace ID — pre-seeded with Real Madrid squad

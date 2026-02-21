@@ -6,6 +6,7 @@ import '../../core/theme.dart';
 import '../../core/constants.dart';
 import '../../models/fixture_model.dart';
 import '../../providers/workspace_provider.dart';
+import '../../widgets/common/pulse_loader.dart';
 import 'match_detail_screen.dart';
 
 class ReportsScreen extends StatefulWidget {
@@ -20,8 +21,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final ws = context.read<WorkspaceProvider>().activeWorkspace;
-      if (ws != null) context.read<WorkspaceProvider>().loadReports(ws.id);
+      // reports are automatically fetched alongside home data when workspace is active.
     });
   }
 
@@ -57,8 +57,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
             Expanded(
               child: reports.isEmpty
                   ? const Center(
-                      child: CircularProgressIndicator(
-                          color: AppColors.textPrimary))
+                      child: PulseLoader(color: AppColors.textPrimary))
                   : ListView.builder(
                       physics: const BouncingScrollPhysics(),
                       padding: const EdgeInsets.symmetric(
@@ -148,8 +147,8 @@ class _ReportCardState extends State<_ReportCard>
           decoration: BoxDecoration(
             color: AppColors.surface,
             borderRadius: BorderRadius.circular(AppConstants.radiusL),
-            border:
-                Border.all(color: resultColor.withValues(alpha: 0.25), width: 1.5),
+            border: Border.all(
+                color: resultColor.withValues(alpha: 0.25), width: 1.5),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -164,7 +163,8 @@ class _ReportCardState extends State<_ReportCard>
                       color: resultColor.withValues(alpha: 0.12),
                       shape: BoxShape.circle,
                       border: Border.all(
-                          color: resultColor.withValues(alpha: 0.4), width: 1.5),
+                          color: resultColor.withValues(alpha: 0.4),
+                          width: 1.5),
                     ),
                     child: Center(
                       child: Text(r.result,

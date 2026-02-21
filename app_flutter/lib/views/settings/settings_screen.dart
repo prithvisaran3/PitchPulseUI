@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import '../../core/theme.dart';
 import '../../core/constants.dart';
 import '../../providers/auth_provider.dart';
-import '../../providers/workspace_provider.dart';
 import '../onboarding/club_select_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -13,7 +12,6 @@ class SettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
-    final workspace = context.watch<WorkspaceProvider>();
     final user = auth.appUser;
 
     return Scaffold(
@@ -45,87 +43,50 @@ class SettingsScreen extends StatelessWidget {
                         .animate()
                         .fadeIn(delay: 150.ms),
                     const SizedBox(height: 10),
-                    if (workspace.activeWorkspace != null) ...[
-                      _WorkspaceCard(
-                        clubName: workspace.activeWorkspace!.clubName,
-                        status: workspace.activeWorkspace!.status,
-                      ).animate().fadeIn(delay: 200.ms),
-                      const SizedBox(height: 12),
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const ClubSelectScreen(),
-                            ),
-                          );
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              vertical: 14, horizontal: 16),
-                          decoration: BoxDecoration(
-                            color: AppColors.surfaceElevated
-                                .withValues(alpha: 0.5),
-                            borderRadius:
-                                BorderRadius.circular(AppConstants.radiusL),
-                            border: Border.all(color: AppColors.surfaceBorder),
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const ClubSelectScreen(),
                           ),
-                          child: Row(
-                            children: [
-                              const Icon(Icons.search_rounded,
-                                  color: AppColors.textPrimary, size: 18),
-                              const SizedBox(width: 12),
-                              Text('Search & Change Club',
-                                  style: AppTextStyles.labelMedium),
-                              const Spacer(),
-                              const Icon(Icons.chevron_right_rounded,
-                                  color: AppColors.textMuted, size: 20),
-                            ],
-                          ),
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 14, horizontal: 16),
+                        decoration: BoxDecoration(
+                          color:
+                              AppColors.surfaceElevated.withValues(alpha: 0.5),
+                          borderRadius:
+                              BorderRadius.circular(AppConstants.radiusL),
+                          border: Border.all(color: AppColors.surfaceBorder),
                         ),
-                      ).animate().fadeIn(delay: 220.ms),
-                    ],
-
-                    const SizedBox(height: AppConstants.spacingL),
-
-                    // Demo mode
-                    _SectionTitle(title: 'Developer')
-                        .animate()
-                        .fadeIn(delay: 250.ms),
-                    const SizedBox(height: 10),
-                    _DemoModeToggle(
-                      enabled: auth.demoMode,
-                      onToggle: (v) => auth.setDemoMode(v),
-                    ).animate().fadeIn(delay: 300.ms),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.search_rounded,
+                                color: AppColors.textPrimary, size: 18),
+                            const SizedBox(width: 12),
+                            Text('Search & Change Club',
+                                style: AppTextStyles.labelMedium),
+                            const Spacer(),
+                            const Icon(Icons.chevron_right_rounded,
+                                color: AppColors.textMuted, size: 20),
+                          ],
+                        ),
+                      ),
+                    ).animate().fadeIn(delay: 220.ms),
 
                     const SizedBox(height: AppConstants.spacingL),
 
                     // App info
                     _SectionTitle(title: 'App').animate().fadeIn(delay: 400.ms),
                     const SizedBox(height: 10),
-                    _SettingsTile(
+                    const _SettingsTile(
                       icon: Icons.info_outline_rounded,
                       label: 'Version',
                       subtitle: '${AppConstants.appVersion} · Phase 1 Demo',
                     ).animate().fadeIn(delay: 450.ms),
-                    const SizedBox(height: 8),
-                    _SettingsTile(
-                      icon: Icons.sports_soccer,
-                      label: 'Data Provider',
-                      subtitle: 'API-Football (placeholder)',
-                    ).animate().fadeIn(delay: 500.ms),
-                    const SizedBox(height: 8),
-                    _SettingsTile(
-                      icon: Icons.cloud_outlined,
-                      label: 'Vector DB',
-                      subtitle: 'Actian VectorAI (backend integration pending)',
-                    ).animate().fadeIn(delay: 550.ms),
-                    const SizedBox(height: 8),
-                    _SettingsTile(
-                      icon: Icons.auto_awesome_outlined,
-                      label: 'AI Engine',
-                      subtitle: 'Gemini Pro (backend integration pending)',
-                    ).animate().fadeIn(delay: 600.ms),
 
                     const SizedBox(height: AppConstants.spacingL),
 
@@ -222,61 +183,6 @@ class _ProfileCard extends StatelessWidget {
   }
 }
 
-class _WorkspaceCard extends StatelessWidget {
-  final String clubName;
-  final String status;
-  const _WorkspaceCard({required this.clubName, required this.status});
-
-  @override
-  Widget build(BuildContext context) {
-    final isApproved = status == 'approved';
-    return Container(
-      padding: const EdgeInsets.all(AppConstants.spacingM),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppConstants.radiusL),
-        border: Border.all(color: AppColors.surfaceBorder),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: AppColors.surfaceElevated,
-              shape: BoxShape.circle,
-            ),
-            child: Center(
-              child: Text(
-                clubName.substring(0, 2).toUpperCase(),
-                style: AppTextStyles.labelMedium
-                    .copyWith(color: AppColors.textPrimary),
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(clubName, style: AppTextStyles.headlineSmall),
-                Text('Workspace · $status', style: AppTextStyles.bodySmall),
-              ],
-            ),
-          ),
-          Icon(
-            isApproved
-                ? Icons.check_circle_rounded
-                : Icons.hourglass_top_rounded,
-            color: isApproved ? AppColors.riskLow : AppColors.riskMed,
-            size: 20,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _SectionTitle extends StatelessWidget {
   final String title;
   const _SectionTitle({required this.title});
@@ -290,59 +196,6 @@ class _SectionTitle extends StatelessWidget {
           fontWeight: FontWeight.w700,
         ),
       );
-}
-
-class _DemoModeToggle extends StatelessWidget {
-  final bool enabled;
-  final ValueChanged<bool> onToggle;
-
-  const _DemoModeToggle({required this.enabled, required this.onToggle});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppConstants.radiusL),
-        border: Border.all(
-          color: enabled
-              ? AppColors.riskMed.withValues(alpha: 0.4)
-              : AppColors.surfaceBorder,
-        ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: AppColors.riskMed.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Icon(Icons.developer_mode_rounded,
-                color: AppColors.riskMed, size: 18),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Demo Mode', style: AppTextStyles.labelMedium),
-                Text('Shows "Simulate FT Update" button on Home',
-                    style: AppTextStyles.bodySmall),
-              ],
-            ),
-          ),
-          Switch(
-            value: enabled,
-            onChanged: onToggle,
-            activeThumbColor: AppColors.riskMed,
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 class _SettingsTile extends StatelessWidget {

@@ -8,6 +8,7 @@ import '../../core/constants.dart';
 import '../../models/player_model.dart';
 import '../../providers/player_provider.dart';
 import '../../widgets/common/gradient_badge.dart';
+import '../../widgets/common/pulse_loader.dart';
 import '../../widgets/common/shimmer_loader.dart';
 
 class PlayerDetailScreen extends StatefulWidget {
@@ -248,12 +249,7 @@ class _ReadinessGauge extends StatelessWidget {
               SizedBox(
                 width: 70,
                 height: 70,
-                child: CircularProgressIndicator(
-                  value: animated / 100,
-                  strokeWidth: 6,
-                  backgroundColor: AppColors.surfaceBorder,
-                  valueColor: AlwaysStoppedAnimation(color),
-                ),
+                child: PulseLoader(color: color, size: 60),
               ),
               Column(
                 mainAxisSize: MainAxisSize.min,
@@ -707,7 +703,8 @@ class _SimilarCasesSectionState extends State<_SimilarCasesSection> {
           decoration: BoxDecoration(
             color: AppColors.surface,
             borderRadius: BorderRadius.circular(AppConstants.radiusL),
-            border: Border.all(color: AppColors.textPrimary.withValues(alpha: 0.3)),
+            border:
+                Border.all(color: AppColors.textPrimary.withValues(alpha: 0.3)),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -729,11 +726,10 @@ class _SimilarCasesSectionState extends State<_SimilarCasesSection> {
         children: [
           const SizedBox(height: 8),
           Row(children: [
-            const SizedBox(
-                width: 14,
-                height: 14,
-                child: CircularProgressIndicator(
-                    color: AppColors.textPrimary, strokeWidth: 2)),
+            SizedBox(
+                width: 20,
+                height: 20,
+                child: PulseLoader(color: AppColors.textPrimary, size: 20)),
             const SizedBox(width: 10),
             Text('Searching vector database...',
                 style: AppTextStyles.bodySmall
@@ -741,6 +737,22 @@ class _SimilarCasesSectionState extends State<_SimilarCasesSection> {
           ]),
         ],
       );
+    }
+
+    if (pp.similarState == PlayerLoadState.error) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 8.0),
+        child: Row(
+          children: [
+            const Icon(Icons.error_outline_rounded,
+                color: AppColors.textMuted, size: 16),
+            const SizedBox(width: 8),
+            Text('Failed to search Vector AI database.',
+                style: AppTextStyles.bodySmall
+                    .copyWith(color: AppColors.textMuted)),
+          ],
+        ),
+      ).animate().fadeIn();
     }
 
     final cases = pp.currentSimilar ?? [];
@@ -799,8 +811,8 @@ class _SimilarCasesSectionState extends State<_SimilarCasesSection> {
                   decoration: BoxDecoration(
                     color: AppColors.riskLow.withValues(alpha: 0.06),
                     borderRadius: BorderRadius.circular(8),
-                    border:
-                        Border.all(color: AppColors.riskLow.withValues(alpha: 0.2)),
+                    border: Border.all(
+                        color: AppColors.riskLow.withValues(alpha: 0.2)),
                   ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -900,8 +912,7 @@ class _ActionPlanSectionState extends State<_ActionPlanSection> {
         ),
         child: Column(
           children: [
-            const CircularProgressIndicator(
-                color: AppColors.riskLow, strokeWidth: 2.5),
+            PulseLoader(color: AppColors.riskLow),
             const SizedBox(height: 14),
             Text('Generating plan with Gemini...',
                 style:
@@ -912,6 +923,30 @@ class _ActionPlanSectionState extends State<_ActionPlanSection> {
           ],
         ),
       );
+    }
+
+    if (pp.planState == PlayerLoadState.error) {
+      return Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(AppConstants.radiusL),
+          border: Border.all(color: AppColors.riskHigh.withValues(alpha: 0.3)),
+        ),
+        child: Column(
+          children: [
+            const Icon(Icons.error_outline_rounded,
+                color: AppColors.riskHigh, size: 28),
+            const SizedBox(height: 12),
+            Text('Action Plan Unavailable',
+                style: AppTextStyles.labelMedium
+                    .copyWith(color: AppColors.riskHigh)),
+            const SizedBox(height: 4),
+            Text(pp.error ?? 'The Gemini backend returned an error.',
+                style: AppTextStyles.bodySmall, textAlign: TextAlign.center),
+          ],
+        ),
+      ).animate().fadeIn();
     }
 
     final plan = pp.currentPlan;
@@ -1004,8 +1039,8 @@ class _ActionPlanCard extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: AppColors.riskHigh.withValues(alpha: 0.06),
                     borderRadius: BorderRadius.circular(10),
-                    border:
-                        Border.all(color: AppColors.riskHigh.withValues(alpha: 0.2)),
+                    border: Border.all(
+                        color: AppColors.riskHigh.withValues(alpha: 0.2)),
                   ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,

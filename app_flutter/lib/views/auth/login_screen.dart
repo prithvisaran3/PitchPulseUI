@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../core/theme.dart';
 import '../../core/constants.dart';
 import '../../providers/auth_provider.dart';
+import '../../widgets/common/pulse_loader.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -279,8 +280,8 @@ class _FormCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: AppColors.riskHigh.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(10),
-                  border:
-                      Border.all(color: AppColors.riskHigh.withValues(alpha: 0.3)),
+                  border: Border.all(
+                      color: AppColors.riskHigh.withValues(alpha: 0.3)),
                 ),
                 child: Row(
                   children: [
@@ -410,10 +411,9 @@ class _GradientButtonState extends State<_GradientButton>
           child: Center(
             child: widget.loading
                 ? const SizedBox(
-                    width: 22,
-                    height: 22,
-                    child: CircularProgressIndicator(
-                        color: AppColors.textPrimary, strokeWidth: 2.5),
+                    width: 24,
+                    height: 24,
+                    child: PulseLoader(color: AppColors.textPrimary),
                   )
                 : Text(widget.label,
                     style:

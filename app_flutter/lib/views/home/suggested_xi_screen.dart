@@ -7,6 +7,7 @@ import '../../core/constants.dart';
 import '../../models/fixture_model.dart';
 import '../../models/player_model.dart';
 import '../../providers/workspace_provider.dart';
+import '../../widgets/common/pulse_loader.dart';
 import '../../widgets/home/player_xi_bottom_sheet.dart';
 
 class SuggestedXIScreen extends StatefulWidget {
@@ -37,8 +38,8 @@ class _SuggestedXIScreenState extends State<SuggestedXIScreen> {
     final wsId =
         workspaceProvider.activeWorkspace?.id ?? AppConstants.demoWorkspaceId;
 
-    final isHome = widget.fixture.homeTeam == 'Castilla' ||
-        widget.fixture.homeTeam == 'Real Madrid';
+    final clubName = workspaceProvider.activeWorkspace?.clubName ?? 'My Club';
+    final isHome = widget.fixture.homeTeam == clubName;
     final opponent = isHome ? widget.fixture.awayTeam : widget.fixture.homeTeam;
 
     try {
@@ -112,8 +113,10 @@ class _SuggestedXIScreenState extends State<SuggestedXIScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isHome = widget.fixture.homeTeam == 'Real Madrid' ||
-        widget.fixture.homeTeam == 'Castilla';
+    final clubName =
+        context.read<WorkspaceProvider>().activeWorkspace?.clubName ??
+            'My Club';
+    final isHome = widget.fixture.homeTeam == clubName;
     final opponent = isHome ? widget.fixture.awayTeam : widget.fixture.homeTeam;
 
     return Scaffold(
@@ -132,11 +135,10 @@ class _SuggestedXIScreenState extends State<SuggestedXIScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const SizedBox(
+                  SizedBox(
                     width: 48,
                     height: 48,
-                    child: CircularProgressIndicator(
-                        color: AppColors.accent, strokeWidth: 3),
+                    child: PulseLoader(color: AppColors.accent),
                   ),
                   const SizedBox(height: 16),
                   Text('AI is building your lineup...',

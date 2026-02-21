@@ -5,6 +5,7 @@ import '../../core/theme.dart';
 import '../../core/constants.dart';
 import '../../models/workspace_model.dart';
 import '../../providers/workspace_provider.dart';
+import '../../widgets/common/pulse_loader.dart';
 
 class ClubSelectScreen extends StatefulWidget {
   const ClubSelectScreen({super.key});
@@ -19,8 +20,6 @@ class _ClubSelectScreenState extends State<ClubSelectScreen> {
   bool _searching = false;
   ClubSearchResult? _selected;
   bool _requesting = false;
-  String? _requestedStatus;
-  String? _workspaceId;
 
   @override
   void initState() {
@@ -48,15 +47,40 @@ class _ClubSelectScreenState extends State<ClubSelectScreen> {
   Future<void> _requestAccess() async {
     if (_selected == null) return;
     setState(() => _requesting = true);
-    final provider = context.read<WorkspaceProvider>();
-    final ws = await provider.requestAccess(_selected!.id, _selected!.name);
-    if (mounted) {
-      setState(() {
-        _requesting = false;
-        _requestedStatus = ws?.status ?? 'pending';
-        _workspaceId = ws?.id;
-      });
+
+    debugPrint(
+        '🟡 [ClubSelect] Requesting access for: ${_selected!.name} (providerTeamId: ${_selected!.providerTeamId})');
+
+    try {
+      await context.read<WorkspaceProvider>().requestAccess(
+            _selected!.id,
+            _selected!.name,
+            providerTeamId: _selected!.providerTeamId,
+          );
+      // AuthGate will automatically route to home if workspace is now set.
+      // If still on this screen after the call, workspace creation failed.
+      if (mounted &&
+          context.read<WorkspaceProvider>().activeWorkspace == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+                'Could not connect to backend. Check your connection and try again.'),
+            backgroundColor: Color(0xFFE53935),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: const Color(0xFFE53935),
+          ),
+        );
+      }
     }
+
+    if (mounted) setState(() => _requesting = false);
   }
 
   @override
@@ -109,14 +133,7 @@ class _ClubSelectScreenState extends State<ClubSelectScreen> {
                   prefixIcon: _searching
                       ? const Padding(
                           padding: EdgeInsets.all(12),
-                          child: SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
+                          child: PulseLoader(color: AppColors.textPrimary),
                         )
                       : const Icon(Icons.search,
                           color: AppColors.textMuted, size: 20),
@@ -131,39 +148,28 @@ class _ClubSelectScreenState extends State<ClubSelectScreen> {
 
             const SizedBox(height: AppConstants.spacingM),
 
-            // Results
-            if (_requestedStatus == null)
-              Expanded(
-                child: ListView.builder(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: AppConstants.spacingL),
-                  itemCount: _results.length,
-                  itemBuilder: (context, i) {
-                    final club = _results[i];
-                    final isSelected = _selected?.id == club.id;
-                    return _ClubCard(
-                      club: club,
-                      isSelected: isSelected,
-                      index: i,
-                      onTap: () =>
-                          setState(() => _selected = isSelected ? null : club),
-                    );
-                  },
-                ),
+            // Results list — always visible
+            Expanded(
+              child: ListView.builder(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppConstants.spacingL),
+                itemCount: _results.length,
+                itemBuilder: (context, i) {
+                  final club = _results[i];
+                  final isSelected = _selected?.id == club.id;
+                  return _ClubCard(
+                    club: club,
+                    isSelected: isSelected,
+                    index: i,
+                    onTap: () =>
+                        setState(() => _selected = isSelected ? null : club),
+                  );
+                },
               ),
+            ),
 
-            // Request status UI
-            if (_requestedStatus != null)
-              Expanded(
-                child: _RequestStatusView(
-                  clubName: _selected?.name ?? '',
-                  status: _requestedStatus!,
-                  workspaceId: _workspaceId,
-                ),
-              ),
-
-            // Bottom button
-            if (_selected != null && _requestedStatus == null)
+            // Bottom button — shown when a club is selected
+            if (_selected != null)
               Padding(
                 padding: const EdgeInsets.all(AppConstants.spacingL),
                 child: _RequestButton(
@@ -260,61 +266,6 @@ class _ClubCard extends StatelessWidget {
   }
 }
 
-class _RequestStatusView extends StatelessWidget {
-  final String clubName;
-  final String status;
-  final String? workspaceId;
-
-  const _RequestStatusView({
-    required this.clubName,
-    required this.status,
-    this.workspaceId,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isPending = status == 'pending';
-    final color = isPending ? AppColors.riskMed : AppColors.riskLow;
-    final icon =
-        isPending ? Icons.hourglass_top_rounded : Icons.check_circle_rounded;
-    final label = isPending ? 'Request Pending' : 'Access Approved!';
-    final sub = isPending
-        ? 'Your request for $clubName has been submitted. An admin will review it shortly.'
-        : 'Your workspace for $clubName is now active. Returning to home...';
-
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(AppConstants.spacingXL),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.12),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: color, size: 40),
-            ).animate().scale(duration: 500.ms, curve: Curves.elasticOut),
-            const SizedBox(height: 24),
-            Text(label,
-                    style: AppTextStyles.displaySmall.copyWith(color: color))
-                .animate(delay: 200.ms)
-                .fadeIn(),
-            const SizedBox(height: 12),
-            Text(sub,
-                    style: AppTextStyles.bodyMedium,
-                    textAlign: TextAlign.center)
-                .animate(delay: 300.ms)
-                .fadeIn(),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _RequestButton extends StatefulWidget {
   final String clubName;
   final bool loading;
@@ -375,10 +326,9 @@ class _RequestButtonState extends State<_RequestButton>
           child: Center(
             child: widget.loading
                 ? const SizedBox(
-                    width: 22,
-                    height: 22,
-                    child: CircularProgressIndicator(
-                        color: Colors.white, strokeWidth: 2.5),
+                    width: 24,
+                    height: 24,
+                    child: PulseLoader(color: AppColors.bg),
                   )
                 : Text(
                     'Request Access · ${widget.clubName}',

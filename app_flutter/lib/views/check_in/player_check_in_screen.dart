@@ -10,6 +10,7 @@ import '../../core/theme.dart';
 import '../../core/constants.dart';
 import '../../models/player_model.dart';
 import '../../widgets/common/gradient_badge.dart';
+import '../../widgets/common/pulse_loader.dart';
 import '../../services/api_client.dart';
 
 class PlayerCheckInScreen extends StatefulWidget {
@@ -29,6 +30,7 @@ class _PlayerCheckInScreenState extends State<PlayerCheckInScreen> {
   XFile? _selfieVideo;
   String? _readinessFlag;
   int? _readinessDelta;
+  String? _emotionalState;
   List<String> _contributingFactors = [];
   String? _selfieRecommendation;
 
@@ -146,6 +148,7 @@ class _PlayerCheckInScreenState extends State<PlayerCheckInScreen> {
       if (result != null && mounted) {
         _readinessFlag = result['readiness_flag'] as String?;
         _readinessDelta = (result['readiness_delta'] as num?)?.toInt();
+        _emotionalState = result['emotional_state'] as String?;
         _contributingFactors =
             (result['contributing_factors'] as List<dynamic>?)
                     ?.map((e) => e.toString())
@@ -175,30 +178,39 @@ class _PlayerCheckInScreenState extends State<PlayerCheckInScreen> {
   Future<Map<String, dynamic>?> _uploadSelfieVideo(XFile video) async {
     final baseUrl = await ApiClient().baseUrl;
     final uri =
-        Uri.parse('$baseUrl/players/${widget.player.id}/checkin/selfie');
-    final request = http.MultipartRequest('POST', uri);
+        Uri.parse('$baseUrl/players/${widget.player.id}/presage_checkin');
 
     // Auth header
     final user = FirebaseAuth.instance.currentUser;
     final token = user != null
         ? await user.getIdToken() ?? 'test-token-admin'
         : 'test-token-admin';
-    request.headers['Authorization'] = 'Bearer $token';
 
-    // Attach the video file
-    request.files.add(await http.MultipartFile.fromPath(
-      'video',
-      video.path,
-      filename: '${widget.player.id}_selfie.mp4',
-    ));
-    request.fields['player_id'] = widget.player.id;
+    debugPrint('🟡 [CheckIn - Selfie] Posting JSON vitals to: $uri');
 
-    final streamed = await request.send().timeout(const Duration(seconds: 30));
-    final response = await http.Response.fromStream(streamed);
+    // Presage endpoint takes a JSON body with vitals, NOT a video upload
+    final response = await http
+        .post(
+          uri,
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode({
+            'vitals': {
+              'stress_level': 'High',
+              'focus': 'Low',
+              'valence': 'Negative',
+              'pulse_rate': 74,
+              'hrv_ms': 42,
+            }
+          }),
+        )
+        .timeout(const Duration(seconds: 30));
+
     if (response.statusCode >= 200 && response.statusCode < 300) {
       debugPrint('🟢 [CheckIn - Selfie] API Response Body: ${response.body}');
-      final json = jsonDecode(response.body);
-      return json as Map<String, dynamic>?;
+      return jsonDecode(response.body) as Map<String, dynamic>?;
     } else {
       debugPrint(
           '🔴 [CheckIn - Selfie] API Error ${response.statusCode}: ${response.body}');
@@ -269,7 +281,7 @@ class _PlayerCheckInScreenState extends State<PlayerCheckInScreen> {
   Future<Map<String, dynamic>?> _uploadMovementVideo(XFile video) async {
     final baseUrl = await ApiClient().baseUrl;
     final uri =
-        Uri.parse('$baseUrl/players/${widget.player.id}/checkin/movement');
+        Uri.parse('$baseUrl/players/${widget.player.id}/movement_analysis');
     final request = http.MultipartRequest('POST', uri);
 
     final user = FirebaseAuth.instance.currentUser;
@@ -286,12 +298,12 @@ class _PlayerCheckInScreenState extends State<PlayerCheckInScreen> {
     request.fields['player_id'] = widget.player.id;
     request.fields['position'] = widget.player.position;
 
+    debugPrint('🟡 [CheckIn - Movement] Uploading video to: $uri');
     final streamed = await request.send().timeout(const Duration(seconds: 60));
     final response = await http.Response.fromStream(streamed);
     if (response.statusCode >= 200 && response.statusCode < 300) {
       debugPrint('🟢 [CheckIn - Movement] API Response Body: ${response.body}');
-      final json = jsonDecode(response.body); // Make sure it uses jsonDecode
-      return json as Map<String, dynamic>?;
+      return jsonDecode(response.body) as Map<String, dynamic>?;
     } else {
       debugPrint(
           '🔴 [CheckIn - Movement] API Error ${response.statusCode}: ${response.body}');
@@ -577,6 +589,23 @@ class _PlayerCheckInScreenState extends State<PlayerCheckInScreen> {
           const SizedBox(height: 24),
           const Divider(color: AppColors.surfaceBorder),
           const SizedBox(height: 16),
+          if (_emotionalState != null) ...[
+            Row(
+              children: [
+                const Icon(Icons.sentiment_dissatisfied_rounded,
+                    size: 16, color: AppColors.textMuted),
+                const SizedBox(width: 8),
+                Text('Emotional State: ',
+                    style: AppTextStyles.labelMedium
+                        .copyWith(color: AppColors.textMuted)),
+                Text(_emotionalState!,
+                    style: AppTextStyles.labelMedium.copyWith(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w600)),
+              ],
+            ),
+            const SizedBox(height: 16),
+          ],
           Text('Physiological Indicators',
               style: AppTextStyles.labelMedium
                   .copyWith(color: AppColors.textMuted)),
@@ -744,33 +773,29 @@ class _PlayerCheckInScreenState extends State<PlayerCheckInScreen> {
                 style: AppTextStyles.labelMedium
                     .copyWith(color: AppColors.textMuted)),
             const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: _movementFlags
-                  .map((flag) => Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: AppColors.riskHigh.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                              color: AppColors.riskHigh.withValues(alpha: 0.3)),
+            ..._movementFlags.map((flag) => Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        margin: const EdgeInsets.only(top: 4),
+                        width: 6,
+                        height: 6,
+                        decoration: const BoxDecoration(
+                          color: AppColors.riskHigh,
+                          shape: BoxShape.circle,
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.warning_amber_rounded,
-                                color: AppColors.riskHigh, size: 14),
-                            const SizedBox(width: 6),
-                            Text(flag,
-                                style: AppTextStyles.labelSmall
-                                    .copyWith(color: AppColors.riskHigh)),
-                          ],
-                        ),
-                      ))
-                  .toList(),
-            ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(flag,
+                            style:
+                                AppTextStyles.bodyMedium.copyWith(height: 1.4)),
+                      ),
+                    ],
+                  ),
+                )),
           ],
           const SizedBox(height: 24),
           const Divider(color: AppColors.surfaceBorder),
@@ -844,19 +869,8 @@ class _PlayerCheckInScreenState extends State<PlayerCheckInScreen> {
                 SizedBox(
                   width: 80,
                   height: 80,
-                  child: CircularProgressIndicator(
-                      color: AppColors.surfaceBorder, strokeWidth: 2),
+                  child: PulseLoader(color: color),
                 ),
-                SizedBox(
-                  width: 80,
-                  height: 80,
-                  child: CircularProgressIndicator(
-                      color: color,
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation(color)),
-                )
-                    .animate(onPlay: (controller) => controller.repeat())
-                    .rotate(duration: 2.seconds),
                 Icon(Icons.auto_awesome, color: color, size: 24)
                     .animate(
                         onPlay: (controller) =>

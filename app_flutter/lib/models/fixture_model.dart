@@ -33,19 +33,25 @@ class FixtureModel {
 
   Duration get timeUntilKickoff => kickoff.difference(DateTime.now());
 
-  factory FixtureModel.fromJson(Map<String, dynamic> json) => FixtureModel(
-        id: json['id'] as String,
-        homeTeam: json['home_team'] as String,
-        awayTeam: json['away_team'] as String,
-        homeLogoUrl: json['home_logo_url'] as String?,
-        awayLogoUrl: json['away_logo_url'] as String?,
-        kickoff: DateTime.parse(json['kickoff'] as String),
-        status: json['status'] as String? ?? 'NS',
-        homeScore: json['home_score'] as int?,
-        awayScore: json['away_score'] as int?,
-        venue: json['venue'] as String,
-        competition: json['competition'] as String,
-      );
+  factory FixtureModel.fromJson(Map<String, dynamic> json,
+      [String myTeamName = 'My Club']) {
+    // Roshini's API uses opponent_name + home_away instead of home_team/away_team.
+    final opponent = json['opponent_name'] as String? ?? 'Unknown';
+    final isHome = (json['home_away'] as String? ?? 'home') == 'home';
+    return FixtureModel(
+      id: json['id'] as String,
+      homeTeam: isHome ? myTeamName : opponent,
+      awayTeam: isHome ? opponent : myTeamName,
+      homeLogoUrl: json['home_logo_url'] as String?,
+      awayLogoUrl: json['away_logo_url'] as String?,
+      kickoff: DateTime.parse(json['kickoff'] as String),
+      status: json['status'] as String? ?? 'NS',
+      homeScore: json['score_home'] as int?,
+      awayScore: json['score_away'] as int?,
+      venue: json['venue'] as String? ?? (isHome ? 'Home' : 'Away'),
+      competition: json['competition'] as String? ?? 'League',
+    );
+  }
 
   static FixtureModel demoUpcoming() => FixtureModel(
         id: 'fixture-next-001',
@@ -115,19 +121,38 @@ class MatchReportModel {
     this.headline,
   });
 
-  factory MatchReportModel.fromJson(Map<String, dynamic> json) =>
-      MatchReportModel(
-        fixtureId: json['fixture_id'] as String,
-        opponent: json['opponent'] as String,
-        matchDate: DateTime.parse(json['match_date'] as String),
-        result: json['result'] as String,
-        goalsFor: json['goals_for'] as int,
-        goalsAgainst: json['goals_against'] as int,
-        competition: json['competition'] as String,
-        avgPlayerLoad: (json['avg_player_load'] as num?)?.toDouble(),
-        headline:
-            json['headline'] as String? ?? json['match_summary'] as String?,
-      );
+  factory MatchReportModel.fromJson(Map<String, dynamic> json) {
+    // Roshini's `recent_fixtures` has opponent_name/kickoff/score_home/score_away
+    final goalsFor = (json['goals_for'] ?? json['score_away']) as int? ?? 0;
+    final goalsAgainst =
+        (json['goals_against'] ?? json['score_home']) as int? ?? 0;
+    final scoreFor = goalsFor;
+    final scoreAgainst = goalsAgainst;
+    final String result;
+    if (scoreFor > scoreAgainst)
+      result = 'W';
+    else if (scoreFor < scoreAgainst)
+      result = 'L';
+    else
+      result = 'D';
+
+    return MatchReportModel(
+      fixtureId: json['fixture_id'] as String? ?? json['id'] as String? ?? '',
+      opponent: json['opponent'] as String? ??
+          json['opponent_name'] as String? ??
+          'Unknown',
+      matchDate: DateTime.tryParse(json['match_date'] as String? ??
+              json['kickoff'] as String? ??
+              '') ??
+          DateTime.now(),
+      result: json['result'] as String? ?? result,
+      goalsFor: goalsFor,
+      goalsAgainst: goalsAgainst,
+      competition: json['competition'] as String? ?? 'League',
+      avgPlayerLoad: (json['avg_player_load'] as num?)?.toDouble(),
+      headline: json['headline'] as String? ?? json['match_summary'] as String?,
+    );
+  }
 
   Color get resultColor {
     switch (result) {

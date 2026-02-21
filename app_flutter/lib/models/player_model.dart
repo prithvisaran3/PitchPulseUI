@@ -35,29 +35,48 @@ class PlayerModel {
     this.riskSparkline = const [],
   });
 
-  factory PlayerModel.fromJson(Map<String, dynamic> json) => PlayerModel(
-        id: json['id'] as String,
-        name: json['name'] as String,
-        position: json['position'] as String? ?? 'MID',
-        nationality: json['nationality'] as String?,
-        jerseyNumber: (json['jersey_number'] ?? json['jersey']) as int?,
-        photoUrl: (json['photo_url'] ?? json['avatar_url']) as String?,
-        age: json['age'] as int?,
-        riskScore:
-            (json['risk_score'] ?? json['acwr_score'] as num?)?.toDouble() ?? 0,
-        riskBand: (json['risk_band'] ?? json['acwr_band']) as String? ?? 'LOW',
-        readinessScore: (json['readiness_score'] as num?)?.toDouble() ?? 100,
-        readinessBand: json['readiness_band'] as String? ?? 'LOW',
-        // Keerthi's action_plan maps `why` array into top_drivers on squad cards
-        topDrivers: ((json['top_drivers'] ?? json['why']) as List<dynamic>?)
-                ?.map((e) => e as String)
-                .toList() ??
-            [],
-        riskSparkline: (json['risk_sparkline'] as List<dynamic>?)
-                ?.map((e) => (e as num).toDouble())
-                .toList() ??
-            [],
-      );
+  factory PlayerModel.fromJson(Map<String, dynamic> json) {
+    // Roshini's backend nests identity fields under a `player` key:
+    // { "player": { "id", "name", "position", "jersey", ... },
+    //   "readiness_score", "risk_score", "risk_band", "top_drivers" at top level }
+    // Flatten by merging sub-object into top-level map (top-level wins on conflicts).
+    final nested = json['player'] as Map<String, dynamic>?;
+    final flat = <String, dynamic>{if (nested != null) ...nested, ...json};
+
+    final name = (flat['name'] ??
+        flat['player_name'] ??
+        flat['full_name'] ??
+        'Unknown Player') as String;
+    final position = (flat['position'] ?? flat['pos'] ?? 'MID') as String;
+
+    return PlayerModel(
+      id: flat['id'] as String? ??
+          'player-${DateTime.now().microsecondsSinceEpoch}',
+      name: name,
+      position: position,
+      nationality: flat['nationality'] as String?,
+      jerseyNumber: (flat['jersey_number'] ??
+          flat['jersey'] ??
+          flat['shirt_number']) as int?,
+      photoUrl: (flat['photo_url'] ?? flat['avatar_url'] ?? flat['image_url'])
+          as String?,
+      age: flat['age'] as int?,
+      riskScore:
+          ((flat['risk_score'] ?? flat['acwr_score']) as num?)?.toDouble() ?? 0,
+      riskBand: (flat['risk_band'] ?? flat['acwr_band'] ?? 'LOW') as String,
+      readinessScore: (flat['readiness_score'] as num?)?.toDouble() ?? 100,
+      readinessBand: (flat['readiness_band'] ?? 'LOW') as String,
+      topDrivers: ((flat['top_drivers'] ?? flat['why']) as List<dynamic>?)
+              ?.map((e) => e?.toString() ?? '')
+              .where((s) => s.isNotEmpty)
+              .toList() ??
+          [],
+      riskSparkline: (flat['risk_sparkline'] as List<dynamic>?)
+              ?.map((e) => (e as num?)?.toDouble() ?? 0.0)
+              .toList() ??
+          [],
+    );
+  }
 
   static List<PlayerModel> demoSquad() => [
         const PlayerModel(

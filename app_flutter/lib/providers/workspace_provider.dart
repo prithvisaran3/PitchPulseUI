@@ -15,7 +15,7 @@ class WorkspaceProvider extends ChangeNotifier {
   LoadState _workspaceState = LoadState.idle;
 
   // Home
-  FixtureModel? _nextFixture;
+  List<FixtureModel> _upcomingFixtures = [];
   List<PlayerModel> _squad = [];
   LoadState _homeState = LoadState.idle;
 
@@ -34,7 +34,7 @@ class WorkspaceProvider extends ChangeNotifier {
   List<WorkspaceModel> get workspaces => _workspaces;
   WorkspaceModel? get activeWorkspace => _activeWorkspace;
   LoadState get workspaceState => _workspaceState;
-  FixtureModel? get nextFixture => _nextFixture;
+  List<FixtureModel> get upcomingFixtures => _upcomingFixtures;
   List<PlayerModel> get squad => _squad;
   LoadState get homeState => _homeState;
   List<MatchReportModel> get reports => _reports;
@@ -46,9 +46,12 @@ class WorkspaceProvider extends ChangeNotifier {
   // ── Club Search ─────────────────────────────────────────────────────────────
   Future<List<ClubSearchResult>> searchClubs(String query) async {
     try {
-      final data = await _api.get('/clubs/search?q=${Uri.encodeComponent(query)}');
+      final data =
+          await _api.get('/clubs/search?q=${Uri.encodeComponent(query)}');
       final list = data as List<dynamic>;
-      return list.map((e) => ClubSearchResult.fromJson(e as Map<String, dynamic>)).toList();
+      return list
+          .map((e) => ClubSearchResult.fromJson(e as Map<String, dynamic>))
+          .toList();
     } catch (_) {
       // Return demo results when backend is not available
       await Future.delayed(const Duration(milliseconds: 600));
@@ -89,18 +92,34 @@ class WorkspaceProvider extends ChangeNotifier {
     _workspaceState = LoadState.loading;
     notifyListeners();
     try {
-      final data = await _api.get('/me/workspaces') as List<dynamic>;
-      _workspaces = data.map((e) => WorkspaceModel.fromJson(e as Map<String, dynamic>)).toList();
+      final response = await _api.get('/me') as Map<String, dynamic>;
+      final data = response['workspaces'] as List<dynamic>? ?? [];
+      debugPrint('🟢 [WorkspaceProvider] Workspaces Response: $data');
+      _workspaces = data
+          .map((e) => WorkspaceModel.fromJson(e as Map<String, dynamic>))
+          .toList();
       if (_workspaces.isNotEmpty && _activeWorkspace == null) {
-        _activeWorkspace = _workspaces.firstWhere((w) => w.isApproved, orElse: () => _workspaces.first);
+        _activeWorkspace = _workspaces.firstWhere((w) => w.isApproved,
+            orElse: () => _workspaces.first);
       }
       _workspaceState = LoadState.loaded;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('🔴 [WorkspaceProvider] Error loading workspaces: $e');
       _workspaces = [WorkspaceModel.demo()];
       _activeWorkspace = _workspaces.first;
       _workspaceState = LoadState.loaded;
     }
     notifyListeners();
+
+    // Auto-sync Roshini's workspace on first use, then load home
+    if (_activeWorkspace != null) {
+      final wsId = _activeWorkspace!.id;
+      if (_squad.isEmpty) {
+        // Trigger the initial data sync (safe to call repeatedly — idempotent)
+        await _api.triggerInitialSync(wsId);
+      }
+      await loadHome(wsId);
+    }
   }
 
   // ── Load Home ───────────────────────────────────────────────────────────────
@@ -108,13 +127,32 @@ class WorkspaceProvider extends ChangeNotifier {
     _homeState = LoadState.loading;
     notifyListeners();
     try {
-      final data = await _api.get('/workspaces/$workspaceId/home') as Map<String, dynamic>;
-      _nextFixture = FixtureModel.fromJson(data['next_fixture'] as Map<String, dynamic>);
+      final data = await _api.get('/workspaces/$workspaceId/home')
+          as Map<String, dynamic>;
+      debugPrint(
+          '🟢 [WorkspaceProvider] Home Sync Response for ws=$workspaceId: $data');
+
+      // Parse upcoming fixtures
+      if (data['upcoming_fixtures'] != null) {
+        final fixturesJson = data['upcoming_fixtures'] as List<dynamic>;
+        _upcomingFixtures = fixturesJson
+            .map((e) => FixtureModel.fromJson(e as Map<String, dynamic>))
+            .toList();
+      } else if (data['next_fixture'] != null) {
+        // Fallback for older API shape
+        _upcomingFixtures = [
+          FixtureModel.fromJson(data['next_fixture'] as Map<String, dynamic>)
+        ];
+      }
+
       final playersJson = data['squad'] as List<dynamic>;
-      _squad = playersJson.map((e) => PlayerModel.fromJson(e as Map<String, dynamic>)).toList();
+      _squad = playersJson
+          .map((e) => PlayerModel.fromJson(e as Map<String, dynamic>))
+          .toList();
       _homeState = LoadState.loaded;
-    } catch (_) {
-      _nextFixture = FixtureModel.demoUpcoming();
+    } catch (e) {
+      debugPrint('🔴 [WorkspaceProvider] Home Sync Error: $e');
+      _upcomingFixtures = FixtureModel.demoUpcomingList();
       _squad = PlayerModel.demoSquad();
       _homeState = LoadState.loaded;
     }
@@ -124,12 +162,32 @@ class WorkspaceProvider extends ChangeNotifier {
   // ── Load Reports ────────────────────────────────────────────────────────────
   Future<void> loadReports(String workspaceId) async {
     try {
-      final data = await _api.get('/workspaces/$workspaceId/reports') as List<dynamic>;
-      _reports = data.map((e) => MatchReportModel.fromJson(e as Map<String, dynamic>)).toList();
-    } catch (_) {
+      final data =
+          await _api.get('/workspaces/$workspaceId/reports') as List<dynamic>;
+      debugPrint(
+          '🟢 [WorkspaceProvider] Reports Response for ws=$workspaceId: $data');
+      _reports = data
+          .map((e) => MatchReportModel.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      debugPrint('🔴 [WorkspaceProvider] Reports Error: $e');
       _reports = MatchReportModel.demoList();
     }
     notifyListeners();
+  }
+
+  // ── Suggested XI (AI) ───────────────────────────────────────────────────────
+  Future<Map<String, dynamic>> generateSuggestedXi(
+      String workspaceId, Map<String, dynamic> payload) async {
+    try {
+      final data = await _api.post('/workspaces/$workspaceId/suggested-xi',
+          body: payload) as Map<String, dynamic>;
+      debugPrint('🟢 [WorkspaceProvider] Suggested XI Response: $data');
+      return data;
+    } catch (e) {
+      debugPrint('🔴 [WorkspaceProvider] Suggested XI Error: $e');
+      rethrow;
+    }
   }
 
   // ── Admin: Load Pending Requests ────────────────────────────────────────────
@@ -138,7 +196,10 @@ class WorkspaceProvider extends ChangeNotifier {
     notifyListeners();
     try {
       final data = await _api.get('/admin/workspaces/pending') as List<dynamic>;
-      _pendingRequests = data.map((e) => WorkspaceModel.fromJson(e as Map<String, dynamic>)).toList();
+      debugPrint('🟢 [WorkspaceProvider] Pending Admin Requests: $data');
+      _pendingRequests = data
+          .map((e) => WorkspaceModel.fromJson(e as Map<String, dynamic>))
+          .toList();
       _adminState = LoadState.loaded;
     } catch (_) {
       _pendingRequests = [
@@ -184,47 +245,68 @@ class WorkspaceProvider extends ChangeNotifier {
       if (_activeWorkspace != null) {
         await loadHome(_activeWorkspace!.id);
       }
-    } catch (_) {
+    } catch (e) {
+      debugPrint('🔴 [WorkspaceProvider] Simulate Match Error: $e');
       // Demo: just update squad with more dramatic risk scores
       await Future.delayed(const Duration(seconds: 2));
       _squad = PlayerModel.demoSquad().map((p) {
         if (p.riskBand == 'LOW' && p.riskScore < 30) {
           return PlayerModel(
-            id: p.id, name: p.name, position: p.position,
-            jerseyNumber: p.jerseyNumber, age: p.age,
-            riskScore: p.riskScore + 12, riskBand: 'MED',
-            readinessScore: p.readinessScore - 10, readinessBand: 'MED',
-            topDrivers: ['Post-match load spike', 'Sprint distance elevated', ...p.topDrivers.take(1)],
+            id: p.id,
+            name: p.name,
+            position: p.position,
+            jerseyNumber: p.jerseyNumber,
+            age: p.age,
+            riskScore: p.riskScore + 12,
+            riskBand: 'MED',
+            readinessScore: p.readinessScore - 10,
+            readinessBand: 'MED',
+            topDrivers: [
+              'Post-match load spike',
+              'Sprint distance elevated',
+              ...p.topDrivers.take(1)
+            ],
             riskSparkline: [...p.riskSparkline.skip(1), p.riskScore + 12],
           );
         }
         return p;
       }).toList();
-      _nextFixture = FixtureModel(
-        id: 'fixture-ft-001',
-        homeTeam: 'Real Madrid',
-        awayTeam: 'Atlético Madrid',
-        kickoff: DateTime.now().subtract(const Duration(hours: 2)),
-        status: 'FT',
-        homeScore: 2,
-        awayScore: 1,
-        venue: 'Santiago Bernabéu',
-        competition: 'La Liga',
-      );
+      _upcomingFixtures = FixtureModel.demoUpcomingList()
+          .skip(1)
+          .toList(); // Remove the finished one
       _reports = [
         MatchReportModel(
           fixtureId: 'ft-001',
           opponent: 'Atlético Madrid',
           matchDate: DateTime.now(),
-          result: 'W', goalsFor: 2, goalsAgainst: 1,
+          result: 'W',
+          goalsFor: 2,
+          goalsAgainst: 1,
           competition: 'La Liga',
           avgPlayerLoad: 268,
-          headline: 'Post-match update: 4 players in MED risk, Bellingham flagged HIGH.',
+          headline:
+              'Post-match update: 4 players in MED risk, Bellingham flagged HIGH.',
         ),
         ...MatchReportModel.demoList(),
       ];
     }
     _simulating = false;
+    notifyListeners();
+  }
+
+  /// Wipe all cached data so next load fetches from the real backend.
+  void clearAll() {
+    _workspaces = [];
+    _activeWorkspace = null;
+    _workspaceState = LoadState.idle;
+    _upcomingFixtures = [];
+    _squad = [];
+    _homeState = LoadState.idle;
+    _reports = [];
+    _pendingRequests = [];
+    _adminState = LoadState.idle;
+    _simulating = false;
+    _error = null;
     notifyListeners();
   }
 

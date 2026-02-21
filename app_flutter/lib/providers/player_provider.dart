@@ -48,11 +48,14 @@ class PlayerProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final data = await _api.get('/players/${player.id}/detail?weeks=6') as Map<String, dynamic>;
+      final data = await _api.get('/players/${player.id}/detail?weeks=6')
+          as Map<String, dynamic>;
+      debugPrint('🟢 [PlayerProvider] Detail Response for ${player.id}: $data');
       _currentDetail = PlayerDetailModel.fromJson(data);
       _detailCache[player.id] = _currentDetail!;
       _detailState = PlayerLoadState.loaded;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('🔴 [PlayerProvider] Detail Error for ${player.id}: $e');
       _currentDetail = PlayerDetailModel.demo(player);
       _detailCache[player.id] = _currentDetail!;
       _detailState = PlayerLoadState.loaded;
@@ -72,11 +75,17 @@ class PlayerProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final data = await _api.get('/players/$playerId/similar_cases?k=5') as List<dynamic>;
-      _currentSimilar = data.map((e) => SimilarCase.fromJson(e as Map<String, dynamic>)).toList();
+      final data = await _api.get('/players/$playerId/similar_cases?k=5')
+          as List<dynamic>;
+      debugPrint(
+          '🟢 [PlayerProvider] Similar Cases Response for $playerId: $data');
+      _currentSimilar = data
+          .map((e) => SimilarCase.fromJson(e as Map<String, dynamic>))
+          .toList();
       _similarCache[playerId] = _currentSimilar!;
       _similarState = PlayerLoadState.loaded;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('🔴 [PlayerProvider] Similar Cases Error for $playerId: $e');
       await Future.delayed(const Duration(milliseconds: 800));
       _currentSimilar = SimilarCase.demoList();
       _similarCache[playerId] = _currentSimilar!;
@@ -97,11 +106,15 @@ class PlayerProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final data = await _api.post('/players/${player.id}/action_plan') as Map<String, dynamic>;
+      final data = await _api.post('/players/${player.id}/action_plan')
+          as Map<String, dynamic>;
+      debugPrint(
+          '🟢 [PlayerProvider] Action Plan Response for ${player.id}: $data');
       _currentPlan = ActionPlan.fromJson(data);
       _planCache[player.id] = _currentPlan!;
       _planState = PlayerLoadState.loaded;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('🔴 [PlayerProvider] Action Plan Error for ${player.id}: $e');
       await Future.delayed(const Duration(seconds: 2));
       _currentPlan = ActionPlan.demo(player);
       _planCache[player.id] = _currentPlan!;

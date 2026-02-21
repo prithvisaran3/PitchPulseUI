@@ -4,6 +4,12 @@
 <dict>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>PitchPulse needs camera access to record player selfie vitals and movement analysis videos for AI readiness assessment.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>PitchPulse needs microphone access when recording movement analysis videos.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>PitchPulse may save check-in videos for AI biomechanics analysis.</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>

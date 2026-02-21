@@ -21,7 +21,8 @@ class PlayerRiskTile extends StatefulWidget {
   State<PlayerRiskTile> createState() => _PlayerRiskTileState();
 }
 
-class _PlayerRiskTileState extends State<PlayerRiskTile> with SingleTickerProviderStateMixin {
+class _PlayerRiskTileState extends State<PlayerRiskTile>
+    with SingleTickerProviderStateMixin {
   late AnimationController _pressController;
   late Animation<double> _pressScale;
   late Animation<double> _tiltX;
@@ -49,9 +50,12 @@ class _PlayerRiskTileState extends State<PlayerRiskTile> with SingleTickerProvid
 
   Color get _borderColor {
     switch (widget.player.riskBand.toUpperCase()) {
-      case 'HIGH': return AppColors.riskHigh.withOpacity(0.5);
-      case 'MED': return AppColors.riskMed.withOpacity(0.4);
-      default: return AppColors.surfaceBorder;
+      case 'HIGH':
+        return AppColors.riskHigh.withValues(alpha: 0.5);
+      case 'MED':
+        return AppColors.riskMed.withValues(alpha: 0.4);
+      default:
+        return AppColors.surfaceBorder;
     }
   }
 
@@ -84,7 +88,7 @@ class _PlayerRiskTileState extends State<PlayerRiskTile> with SingleTickerProvid
             boxShadow: isHigh
                 ? [
                     BoxShadow(
-                      color: AppColors.riskHigh.withOpacity(0.15),
+                      color: AppColors.riskHigh.withValues(alpha: 0.15),
                       blurRadius: 16,
                       spreadRadius: -2,
                     ),
@@ -100,7 +104,8 @@ class _PlayerRiskTileState extends State<PlayerRiskTile> with SingleTickerProvid
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Container(
-                    width: 34, height: 34,
+                    width: 34,
+                    height: 34,
                     decoration: BoxDecoration(
                       gradient: AppColors.gradientForRisk(p.riskBand),
                       shape: BoxShape.circle,
@@ -153,17 +158,17 @@ class _PlayerRiskTileState extends State<PlayerRiskTile> with SingleTickerProvid
               const Spacer(),
               const SizedBox(height: 8),
 
+              // Readiness (Prioritized)
+              ReadinessBadge(score: p.readinessScore, small: true),
+
+              const SizedBox(height: 5),
+
               // Risk badge
               RiskBadge(
                 band: p.riskBand,
                 score: p.riskScore,
                 pulse: isHigh,
               ),
-
-              const SizedBox(height: 5),
-
-              // Readiness
-              ReadinessBadge(score: p.readinessScore, small: true),
             ],
           ),
         ),
@@ -198,7 +203,7 @@ class _SparklinePainter extends CustomPainter {
 
     final fillPaint = Paint()
       ..shader = LinearGradient(
-        colors: [color.withOpacity(0.3), color.withOpacity(0)],
+        colors: [color.withValues(alpha: 0.3), color.withValues(alpha: 0)],
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
       ).createShader(Rect.fromLTWH(0, 0, size.width, size.height))

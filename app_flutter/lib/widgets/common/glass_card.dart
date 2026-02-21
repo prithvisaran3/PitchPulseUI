@@ -32,7 +32,7 @@ class GlassCard extends StatelessWidget {
         filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
         child: Container(
           decoration: BoxDecoration(
-            color: backgroundColor ?? AppColors.surface.withOpacity(0.85),
+            color: backgroundColor ?? AppColors.surface.withValues(alpha: 0.85),
             borderRadius: BorderRadius.circular(radius),
             border: Border.all(
               color: borderColor ?? AppColors.surfaceBorder,
@@ -57,13 +57,15 @@ class _TappableCard extends StatefulWidget {
   final VoidCallback onTap;
   final double radius;
 
-  const _TappableCard({required this.child, required this.onTap, required this.radius});
+  const _TappableCard(
+      {required this.child, required this.onTap, required this.radius});
 
   @override
   State<_TappableCard> createState() => _TappableCardState();
 }
 
-class _TappableCardState extends State<_TappableCard> with SingleTickerProviderStateMixin {
+class _TappableCardState extends State<_TappableCard>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scale;
 
@@ -96,7 +98,8 @@ class _TappableCardState extends State<_TappableCard> with SingleTickerProviderS
       onTapCancel: () => _controller.reverse(),
       child: AnimatedBuilder(
         animation: _scale,
-        builder: (_, child) => Transform.scale(scale: _scale.value, child: child),
+        builder: (_, child) =>
+            Transform.scale(scale: _scale.value, child: child),
         child: widget.child,
       ),
     );

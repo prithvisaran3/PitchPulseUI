@@ -1,43 +1,16 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import '../../core/theme.dart';
-import '../../core/constants.dart';
+
 import '../../providers/workspace_provider.dart';
 import 'home_screen.dart';
-import '../onboarding/club_select_screen.dart';
+// Replace ClubSelectScreen with the new CheckInScreen once it's created.
+import '../check_in/check_in_screen.dart';
 import '../reports/reports_screen.dart';
 import '../settings/settings_screen.dart';
-
-class SquadScreen extends StatelessWidget {
-  const SquadScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    // Squad tab: reuse home but with full-width list layout (placeholder)
-    return Scaffold(
-      body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(AppConstants.spacingL),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Squad', style: AppTextStyles.displayMedium),
-                  Text('Full roster · search & filter', style: AppTextStyles.bodyMedium),
-                ],
-              ),
-            ),
-            // Mirror homescreen squad grid with different layout (placeholder)
-            const Expanded(child: HomeScreen()),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 class ManagerShell extends StatefulWidget {
   const ManagerShell({super.key});
@@ -46,13 +19,14 @@ class ManagerShell extends StatefulWidget {
   State<ManagerShell> createState() => _ManagerShellState();
 }
 
-class _ManagerShellState extends State<ManagerShell> with TickerProviderStateMixin {
+class _ManagerShellState extends State<ManagerShell>
+    with TickerProviderStateMixin {
   int _currentIndex = 0;
   late AnimationController _fabCtrl;
 
   final _screens = const [
     HomeScreen(),
-    ClubSelectScreen(),
+    CheckInScreen(), // New Check-In Tab
     ReportsScreen(),
     SettingsScreen(),
   ];
@@ -60,7 +34,8 @@ class _ManagerShellState extends State<ManagerShell> with TickerProviderStateMix
   @override
   void initState() {
     super.initState();
-    _fabCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 300));
+    _fabCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 300));
     _fabCtrl.forward();
 
     // Preload workspace data
@@ -78,65 +53,27 @@ class _ManagerShellState extends State<ManagerShell> with TickerProviderStateMix
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
-      ),
-      bottomNavigationBar: _PitchPulseNavBar(
-        currentIndex: _currentIndex,
-        onTap: (i) {
-          HapticFeedback.selectionClick();
-          setState(() => _currentIndex = i);
-        },
-      ),
-    );
-  }
-}
-
-class _PitchPulseNavBar extends StatelessWidget {
-  final int currentIndex;
-  final ValueChanged<int> onTap;
-
-  const _PitchPulseNavBar({required this.currentIndex, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final items = [
-      _NavItem(icon: Icons.home_rounded, label: 'Home'),
-      _NavItem(icon: Icons.sports_soccer_rounded, label: 'Club'),
-      _NavItem(icon: Icons.bar_chart_rounded, label: 'Reports'),
-      _NavItem(icon: Icons.settings_rounded, label: 'Settings'),
-    ];
-
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        border: const Border(top: BorderSide(color: AppColors.surfaceBorder, width: 1)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.3),
-            blurRadius: 20,
-            offset: const Offset(0, -5),
+      extendBody:
+          true, // Allow content to flow under the transparent/floating nav bar
+      body: Stack(
+        children: [
+          IndexedStack(
+            index: _currentIndex,
+            children: _screens,
+          ),
+          Positioned(
+            bottom: 24,
+            left: 24,
+            right: 24,
+            child: _FloatingNavBar(
+              currentIndex: _currentIndex,
+              onTap: (i) {
+                HapticFeedback.selectionClick();
+                setState(() => _currentIndex = i);
+              },
+            ),
           ),
         ],
-      ),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: items.asMap().entries.map((entry) {
-              final i = entry.key;
-              final item = entry.value;
-              final isSelected = currentIndex == i;
-              return _NavTile(
-                item: item,
-                isSelected: isSelected,
-                onTap: () => onTap(i),
-              );
-            }).toList(),
-          ),
-        ),
       ),
     );
   }
@@ -148,82 +85,109 @@ class _NavItem {
   const _NavItem({required this.icon, required this.label});
 }
 
-class _NavTile extends StatefulWidget {
+class _FloatingNavBar extends StatelessWidget {
+  final int currentIndex;
+  final ValueChanged<int> onTap;
+
+  const _FloatingNavBar({required this.currentIndex, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final items = [
+      _NavItem(icon: Icons.home_rounded, label: 'Home'),
+      _NavItem(icon: Icons.assignment_turned_in_rounded, label: 'Check-In'),
+      _NavItem(icon: Icons.bar_chart_rounded, label: 'Reports'),
+      _NavItem(icon: Icons.settings_rounded, label: 'Settings'),
+    ];
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(32),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          decoration: BoxDecoration(
+            color: AppColors.surfaceElevated.withValues(alpha: 0.8),
+            borderRadius: BorderRadius.circular(32),
+            border: Border.all(
+                color: AppColors.surfaceBorder.withValues(alpha: 0.5),
+                width: 1),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.5),
+                blurRadius: 24,
+                spreadRadius: 2,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: items.asMap().entries.map((entry) {
+              final i = entry.key;
+              final item = entry.value;
+              final isSelected = currentIndex == i;
+              return _PillNavTile(
+                item: item,
+                isSelected: isSelected,
+                onTap: () => onTap(i),
+              );
+            }).toList(),
+          ),
+        ),
+      ),
+    ).animate().slideY(
+        begin: 1.5, end: 0, duration: 600.ms, curve: Curves.easeOutBack);
+  }
+}
+
+class _PillNavTile extends StatelessWidget {
   final _NavItem item;
   final bool isSelected;
   final VoidCallback onTap;
 
-  const _NavTile({required this.item, required this.isSelected, required this.onTap});
-
-  @override
-  State<_NavTile> createState() => _NavTileState();
-}
-
-class _NavTileState extends State<_NavTile> with SingleTickerProviderStateMixin {
-  late AnimationController _ctrl;
-  late Animation<double> _scale;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 200));
-    _scale = Tween(begin: 1.0, end: 1.2).animate(
-      CurvedAnimation(parent: _ctrl, curve: Curves.elasticOut),
-    );
-    if (widget.isSelected) _ctrl.value = 1;
-  }
-
-  @override
-  void didUpdateWidget(_NavTile old) {
-    super.didUpdateWidget(old);
-    if (widget.isSelected != old.isSelected) {
-      if (widget.isSelected) { _ctrl.forward(); }
-      else { _ctrl.reverse(); }
-    }
-  }
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
+  const _PillNavTile(
+      {required this.item, required this.isSelected, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: widget.onTap,
+      onTap: onTap,
       behavior: HitTestBehavior.opaque,
-      child: SizedBox(
-        width: 70,
-        child: Column(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOutQuint,
+        padding: EdgeInsets.symmetric(
+          horizontal: isSelected ? 20 : 12,
+          vertical: 12,
+        ),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppColors.textPrimary.withValues(alpha: 0.15)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(24),
+          border: isSelected
+              ? Border.all(color: AppColors.textPrimary.withValues(alpha: 0.3))
+              : Border.all(color: Colors.transparent),
+        ),
+        child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            AnimatedBuilder(
-              animation: _scale,
-              builder: (_, child) => Transform.scale(scale: _scale.value, child: child),
-              child: AnimatedContainer(
-                duration: AppConstants.animFast,
-                width: 42, height: 32,
-                decoration: BoxDecoration(
-                  color: widget.isSelected ? AppColors.accent.withOpacity(0.15) : Colors.transparent,
-                  borderRadius: BorderRadius.circular(AppConstants.radiusS),
-                ),
-                child: Icon(
-                  widget.item.icon,
-                  size: 20,
-                  color: widget.isSelected ? AppColors.accent : AppColors.textMuted,
-                ),
-              ),
+            Icon(
+              item.icon,
+              size: 24,
+              color: isSelected ? AppColors.textPrimary : AppColors.textMuted,
             ),
-            const SizedBox(height: 3),
-            AnimatedDefaultTextStyle(
-              duration: AppConstants.animFast,
-              style: AppTextStyles.caption.copyWith(
-                color: widget.isSelected ? AppColors.accent : AppColors.textMuted,
-                fontWeight: widget.isSelected ? FontWeight.w700 : FontWeight.w400,
-              ),
-              child: Text(widget.item.label),
-            ),
+            if (isSelected) ...[
+              const SizedBox(width: 8),
+              Text(
+                item.label,
+                style: AppTextStyles.labelMedium.copyWith(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ).animate().fadeIn(duration: 200.ms).slideX(begin: 0.2, end: 0),
+            ],
           ],
         ),
       ),

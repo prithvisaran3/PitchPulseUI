@@ -57,6 +57,28 @@ class FixtureModel {
         competition: 'La Liga',
       );
 
+  static List<FixtureModel> demoUpcomingList() => [
+        demoUpcoming(),
+        FixtureModel(
+          id: 'fixture-next-002',
+          homeTeam: 'Sevilla',
+          awayTeam: 'Real Madrid',
+          kickoff: DateTime.now().add(const Duration(days: 10, hours: 2)),
+          status: 'NS',
+          venue: 'Ramón Sánchez Pizjuán',
+          competition: 'La Liga',
+        ),
+        FixtureModel(
+          id: 'fixture-next-003',
+          homeTeam: 'Real Madrid',
+          awayTeam: 'Bayern FC',
+          kickoff: DateTime.now().add(const Duration(days: 14, hours: 8)),
+          status: 'NS',
+          venue: 'Santiago Bernabéu',
+          competition: 'UCL',
+        ),
+      ];
+
   static FixtureModel demoLive() => FixtureModel(
         id: 'fixture-live-001',
         homeTeam: 'Real Madrid',
@@ -93,7 +115,8 @@ class MatchReportModel {
     this.headline,
   });
 
-  factory MatchReportModel.fromJson(Map<String, dynamic> json) => MatchReportModel(
+  factory MatchReportModel.fromJson(Map<String, dynamic> json) =>
+      MatchReportModel(
         fixtureId: json['fixture_id'] as String,
         opponent: json['opponent'] as String,
         matchDate: DateTime.parse(json['match_date'] as String),
@@ -102,15 +125,20 @@ class MatchReportModel {
         goalsAgainst: json['goals_against'] as int,
         competition: json['competition'] as String,
         avgPlayerLoad: (json['avg_player_load'] as num?)?.toDouble(),
-        headline: json['headline'] as String?,
+        headline:
+            json['headline'] as String? ?? json['match_summary'] as String?,
       );
 
   Color get resultColor {
     switch (result) {
-      case 'W': return const Color(0xFF00E5A0);
-      case 'D': return const Color(0xFFFFC107);
-      case 'L': return const Color(0xFFFF4040);
-      default:  return const Color(0xFF8FA3BF);
+      case 'W':
+        return const Color(0xFF00E5A0);
+      case 'D':
+        return const Color(0xFFFFC107);
+      case 'L':
+        return const Color(0xFFFF4040);
+      default:
+        return const Color(0xFF8FA3BF);
     }
   }
 
@@ -119,23 +147,34 @@ class MatchReportModel {
           fixtureId: 'r1',
           opponent: 'Villarreal',
           matchDate: DateTime.now().subtract(const Duration(days: 7)),
-          result: 'W', goalsFor: 3, goalsAgainst: 1, competition: 'La Liga',
+          result: 'W',
+          goalsFor: 3,
+          goalsAgainst: 1,
+          competition: 'La Liga',
           avgPlayerLoad: 248,
-          headline: '3 HIGH risk flags post-match. Bellingham & Carvajal flagged.',
+          headline:
+              '3 HIGH risk flags post-match. Bellingham & Carvajal flagged.',
         ),
         MatchReportModel(
           fixtureId: 'r2',
           opponent: 'Manchester City',
           matchDate: DateTime.now().subtract(const Duration(days: 14)),
-          result: 'D', goalsFor: 1, goalsAgainst: 1, competition: 'UCL',
+          result: 'D',
+          goalsFor: 1,
+          goalsAgainst: 1,
+          competition: 'UCL',
           avgPlayerLoad: 312,
-          headline: 'High load match. Squad fatigue elevated. 5 players in MED zone.',
+          headline:
+              'High load match. Squad fatigue elevated. 5 players in MED zone.',
         ),
         MatchReportModel(
           fixtureId: 'r3',
           opponent: 'Sevilla',
           matchDate: DateTime.now().subtract(const Duration(days: 21)),
-          result: 'W', goalsFor: 2, goalsAgainst: 0, competition: 'La Liga',
+          result: 'W',
+          goalsFor: 2,
+          goalsAgainst: 0,
+          competition: 'La Liga',
           avgPlayerLoad: 215,
           headline: 'Controlled performance. Load within optimal range.',
         ),
@@ -143,9 +182,13 @@ class MatchReportModel {
           fixtureId: 'r4',
           opponent: 'Borussia Dortmund',
           matchDate: DateTime.now().subtract(const Duration(days: 28)),
-          result: 'W', goalsFor: 2, goalsAgainst: 1, competition: 'UCL',
+          result: 'W',
+          goalsFor: 2,
+          goalsAgainst: 1,
+          competition: 'UCL',
           avgPlayerLoad: 290,
-          headline: 'High intensity. Mbappé & Valverde show elevated acute spikes.',
+          headline:
+              'High intensity. Mbappé & Valverde show elevated acute spikes.',
         ),
       ];
 }

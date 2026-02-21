@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'core/firebase_options.dart';
 import 'core/theme.dart';
 import 'core/auth_gate.dart';
 import 'providers/auth_provider.dart';
 import 'providers/workspace_provider.dart';
 import 'providers/player_provider.dart';
+import 'core/route_observer.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,6 +27,7 @@ void main() async {
     statusBarBrightness: Brightness.dark,
   ));
 
+  await dotenv.load(fileName: ".env");
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   runApp(const PitchPulseApp());
@@ -45,13 +48,15 @@ class PitchPulseApp extends StatelessWidget {
         title: 'PitchPulse',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.dark,
+        navigatorObservers: [AppRouteObserver()],
         home: const AuthGate(),
         builder: (context, child) {
           // Clamp text scale for consistent UI
           final mq = MediaQuery.of(context);
           return MediaQuery(
             data: mq.copyWith(
-              textScaler: TextScaler.linear(mq.textScaler.scale(1.0).clamp(0.8, 1.15)),
+              textScaler:
+                  TextScaler.linear(mq.textScaler.scale(1.0).clamp(0.8, 1.15)),
             ),
             child: child!,
           );

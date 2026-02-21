@@ -5,6 +5,7 @@ import '../../core/theme.dart';
 import '../../core/constants.dart';
 import '../../models/workspace_model.dart';
 import '../../providers/workspace_provider.dart';
+
 class ClubSelectScreen extends StatefulWidget {
   const ClubSelectScreen({super.key});
 
@@ -37,7 +38,11 @@ class _ClubSelectScreenState extends State<ClubSelectScreen> {
     setState(() => _searching = true);
     final provider = context.read<WorkspaceProvider>();
     final results = await provider.searchClubs(q);
-    if (mounted) setState(() { _results = results; _searching = false; });
+    if (mounted)
+      setState(() {
+        _results = results;
+        _searching = false;
+      });
   }
 
   Future<void> _requestAccess() async {
@@ -67,8 +72,22 @@ class _ClubSelectScreenState extends State<ClubSelectScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  if (Navigator.canPop(context))
+                    Padding(
+                      padding:
+                          const EdgeInsets.only(bottom: AppConstants.spacingM),
+                      child: IconButton(
+                        icon: const Icon(Icons.arrow_back_ios_new_rounded,
+                            color: AppColors.textPrimary),
+                        padding: EdgeInsets.zero,
+                        alignment: Alignment.centerLeft,
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ),
                   Text('Select Club', style: AppTextStyles.displayMedium)
-                      .animate().fadeIn(duration: 400.ms).slideX(begin: -0.1),
+                      .animate()
+                      .fadeIn(duration: 400.ms)
+                      .slideX(begin: -0.1),
                   const SizedBox(height: 6),
                   Text(
                     'Search for your club to set up your workspace',
@@ -80,7 +99,8 @@ class _ClubSelectScreenState extends State<ClubSelectScreen> {
 
             // Search bar
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppConstants.spacingL),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: AppConstants.spacingL),
               child: TextField(
                 controller: _searchCtrl,
                 style: AppTextStyles.bodyLarge,
@@ -90,14 +110,16 @@ class _ClubSelectScreenState extends State<ClubSelectScreen> {
                       ? const Padding(
                           padding: EdgeInsets.all(12),
                           child: SizedBox(
-                            width: 16, height: 16,
+                            width: 16,
+                            height: 16,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              color: AppColors.accent,
+                              color: AppColors.textPrimary,
                             ),
                           ),
                         )
-                      : const Icon(Icons.search, color: AppColors.textMuted, size: 20),
+                      : const Icon(Icons.search,
+                          color: AppColors.textMuted, size: 20),
                 ),
                 onChanged: (v) {
                   Future.delayed(const Duration(milliseconds: 400), () {
@@ -113,7 +135,8 @@ class _ClubSelectScreenState extends State<ClubSelectScreen> {
             if (_requestedStatus == null)
               Expanded(
                 child: ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: AppConstants.spacingL),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: AppConstants.spacingL),
                   itemCount: _results.length,
                   itemBuilder: (context, i) {
                     final club = _results[i];
@@ -122,7 +145,8 @@ class _ClubSelectScreenState extends State<ClubSelectScreen> {
                       club: club,
                       isSelected: isSelected,
                       index: i,
-                      onTap: () => setState(() => _selected = isSelected ? null : club),
+                      onTap: () =>
+                          setState(() => _selected = isSelected ? null : club),
                     );
                   },
                 ),
@@ -177,10 +201,12 @@ class _ClubCard extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.accent.withOpacity(0.1) : AppColors.surface,
+          color: isSelected
+              ? AppColors.textPrimary.withValues(alpha: 0.1)
+              : AppColors.surface,
           borderRadius: BorderRadius.circular(AppConstants.radiusL),
           border: Border.all(
-            color: isSelected ? AppColors.accent : AppColors.surfaceBorder,
+            color: isSelected ? AppColors.textPrimary : AppColors.surfaceBorder,
             width: isSelected ? 1.5 : 1,
           ),
         ),
@@ -188,7 +214,8 @@ class _ClubCard extends StatelessWidget {
           children: [
             // Crest placeholder
             Container(
-              width: 48, height: 48,
+              width: 48,
+              height: 48,
               decoration: BoxDecoration(
                 color: AppColors.surfaceElevated,
                 shape: BoxShape.circle,
@@ -197,7 +224,8 @@ class _ClubCard extends StatelessWidget {
               child: Center(
                 child: Text(
                   club.name.substring(0, 2).toUpperCase(),
-                  style: AppTextStyles.labelMedium.copyWith(color: AppColors.accent),
+                  style: AppTextStyles.labelMedium
+                      .copyWith(color: AppColors.textPrimary),
                 ),
               ),
             ),
@@ -208,15 +236,18 @@ class _ClubCard extends StatelessWidget {
                 children: [
                   Text(club.name, style: AppTextStyles.headlineSmall),
                   if (club.country != null)
-                    Text('${club.country}${club.founded != null ? ' · Est. ${club.founded}' : ''}',
+                    Text(
+                        '${club.country}${club.founded != null ? ' · Est. ${club.founded}' : ''}',
                         style: AppTextStyles.bodySmall),
                 ],
               ),
             ),
             if (isSelected)
               Container(
-                width: 24, height: 24,
-                decoration: const BoxDecoration(color: AppColors.accent, shape: BoxShape.circle),
+                width: 24,
+                height: 24,
+                decoration: const BoxDecoration(
+                    color: AppColors.textPrimary, shape: BoxShape.circle),
                 child: const Icon(Icons.check, size: 14, color: Colors.black),
               ),
           ],
@@ -244,7 +275,8 @@ class _RequestStatusView extends StatelessWidget {
   Widget build(BuildContext context) {
     final isPending = status == 'pending';
     final color = isPending ? AppColors.riskMed : AppColors.riskLow;
-    final icon = isPending ? Icons.hourglass_top_rounded : Icons.check_circle_rounded;
+    final icon =
+        isPending ? Icons.hourglass_top_rounded : Icons.check_circle_rounded;
     final label = isPending ? 'Request Pending' : 'Access Approved!';
     final sub = isPending
         ? 'Your request for $clubName has been submitted. An admin will review it shortly.'
@@ -257,21 +289,25 @@ class _RequestStatusView extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 80, height: 80,
+              width: 80,
+              height: 80,
               decoration: BoxDecoration(
-                color: color.withOpacity(0.12),
+                color: color.withValues(alpha: 0.12),
                 shape: BoxShape.circle,
               ),
               child: Icon(icon, color: color, size: 40),
-            )
-                .animate()
-                .scale(duration: 500.ms, curve: Curves.elasticOut),
+            ).animate().scale(duration: 500.ms, curve: Curves.elasticOut),
             const SizedBox(height: 24),
-            Text(label, style: AppTextStyles.displaySmall.copyWith(color: color))
-                .animate(delay: 200.ms).fadeIn(),
+            Text(label,
+                    style: AppTextStyles.displaySmall.copyWith(color: color))
+                .animate(delay: 200.ms)
+                .fadeIn(),
             const SizedBox(height: 12),
-            Text(sub, style: AppTextStyles.bodyMedium, textAlign: TextAlign.center)
-                .animate(delay: 300.ms).fadeIn(),
+            Text(sub,
+                    style: AppTextStyles.bodyMedium,
+                    textAlign: TextAlign.center)
+                .animate(delay: 300.ms)
+                .fadeIn(),
           ],
         ),
       ),
@@ -284,29 +320,38 @@ class _RequestButton extends StatefulWidget {
   final bool loading;
   final VoidCallback onTap;
 
-  const _RequestButton({required this.clubName, required this.loading, required this.onTap});
+  const _RequestButton(
+      {required this.clubName, required this.loading, required this.onTap});
 
   @override
   State<_RequestButton> createState() => _RequestButtonState();
 }
 
-class _RequestButtonState extends State<_RequestButton> with SingleTickerProviderStateMixin {
+class _RequestButtonState extends State<_RequestButton>
+    with SingleTickerProviderStateMixin {
   late AnimationController _ctrl;
 
   @override
   void initState() {
     super.initState();
-    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 120));
+    _ctrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 120));
   }
 
   @override
-  void dispose() { _ctrl.dispose(); super.dispose(); }
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTapDown: (_) => _ctrl.forward(),
-      onTapUp: (_) { _ctrl.reverse(); if (!widget.loading) widget.onTap(); },
+      onTapUp: (_) {
+        _ctrl.reverse();
+        if (!widget.loading) widget.onTap();
+      },
       onTapCancel: () => _ctrl.reverse(),
       child: AnimatedBuilder(
         animation: _ctrl,
@@ -317,11 +362,11 @@ class _RequestButtonState extends State<_RequestButton> with SingleTickerProvide
         child: Container(
           height: 54,
           decoration: BoxDecoration(
-            gradient: AppColors.gradientAccent,
+            color: AppColors.textPrimary,
             borderRadius: BorderRadius.circular(14),
             boxShadow: [
               BoxShadow(
-                color: AppColors.accent.withOpacity(0.35),
+                color: AppColors.textPrimary.withValues(alpha: 0.35),
                 blurRadius: 20,
                 offset: const Offset(0, 6),
               ),
@@ -330,16 +375,22 @@ class _RequestButtonState extends State<_RequestButton> with SingleTickerProvide
           child: Center(
             child: widget.loading
                 ? const SizedBox(
-                    width: 22, height: 22,
-                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(
+                        color: Colors.white, strokeWidth: 2.5),
                   )
                 : Text(
                     'Request Access · ${widget.clubName}',
-                    style: AppTextStyles.labelLarge.copyWith(color: Colors.white),
+                    style:
+                        AppTextStyles.labelLarge.copyWith(color: AppColors.bg),
                   ),
           ),
         ),
       ),
-    ).animate().fadeIn(duration: 300.ms).slideY(begin: 0.5, end: 0, curve: Curves.elasticOut);
+    )
+        .animate()
+        .fadeIn(duration: 300.ms)
+        .slideY(begin: 0.5, end: 0, curve: Curves.elasticOut);
   }
 }

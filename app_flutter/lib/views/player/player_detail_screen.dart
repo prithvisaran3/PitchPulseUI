@@ -18,7 +18,8 @@ class PlayerDetailScreen extends StatefulWidget {
   State<PlayerDetailScreen> createState() => _PlayerDetailScreenState();
 }
 
-class _PlayerDetailScreenState extends State<PlayerDetailScreen> with TickerProviderStateMixin {
+class _PlayerDetailScreenState extends State<PlayerDetailScreen>
+    with TickerProviderStateMixin {
   late TabController _tabController;
   late AnimationController _gaugeCtrl;
 
@@ -26,12 +27,14 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen> with TickerProv
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    _gaugeCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 1200))
+    _gaugeCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 1200))
       ..forward();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final pp = context.read<PlayerProvider>();
-      if (pp.currentDetail == null || pp.currentDetail!.player.id != widget.player.id) {
+      if (pp.currentDetail == null ||
+          pp.currentDetail!.player.id != widget.player.id) {
         pp.loadPlayerDetail(widget.player);
       }
     });
@@ -102,7 +105,7 @@ class _PlayerHeader extends StatelessWidget {
         gradient: LinearGradient(
           colors: [
             AppColors.bg,
-            AppColors.colorForRisk(player.riskBand).withOpacity(0.08),
+            AppColors.colorForRisk(player.riskBand).withValues(alpha: 0.08),
             AppColors.bg,
           ],
           begin: Alignment.topLeft,
@@ -124,7 +127,8 @@ class _PlayerHeader extends StatelessWidget {
                   gradient: AppColors.gradientForRisk(player.riskBand),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.colorForRisk(player.riskBand).withOpacity(0.35),
+                      color: AppColors.colorForRisk(player.riskBand)
+                          .withValues(alpha: 0.35),
                       blurRadius: 20,
                     ),
                   ],
@@ -141,18 +145,23 @@ class _PlayerHeader extends StatelessWidget {
               ),
               if (player.jerseyNumber != null)
                 Positioned(
-                  bottom: 0, right: 0,
+                  bottom: 0,
+                  right: 0,
                   child: Container(
-                    width: 24, height: 24,
+                    width: 24,
+                    height: 24,
                     decoration: BoxDecoration(
                       color: AppColors.bg,
                       shape: BoxShape.circle,
-                      border: Border.all(color: AppColors.colorForRisk(player.riskBand), width: 1.5),
+                      border: Border.all(
+                          color: AppColors.colorForRisk(player.riskBand),
+                          width: 1.5),
                     ),
                     child: Center(
                       child: Text(
                         '${player.jerseyNumber}',
-                        style: AppTextStyles.caption.copyWith(fontWeight: FontWeight.w800),
+                        style: AppTextStyles.caption
+                            .copyWith(fontWeight: FontWeight.w800),
                       ),
                     ),
                   ),
@@ -169,13 +178,16 @@ class _PlayerHeader extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(player.name, style: AppTextStyles.displaySmall)
-                    .animate().fadeIn(delay: 100.ms).slideX(begin: 0.1),
+                    .animate()
+                    .fadeIn(delay: 100.ms)
+                    .slideX(begin: 0.1),
                 const SizedBox(height: 4),
                 Row(children: [
                   Text(player.position, style: AppTextStyles.bodySmall),
                   if (player.nationality != null) ...[
                     const SizedBox(width: 8),
-                    Text('· ${player.nationality}', style: AppTextStyles.bodySmall),
+                    Text('· ${player.nationality}',
+                        style: AppTextStyles.bodySmall),
                   ],
                 ]).animate().fadeIn(delay: 150.ms),
                 const SizedBox(height: 10),
@@ -183,8 +195,11 @@ class _PlayerHeader extends StatelessWidget {
                   spacing: 8,
                   runSpacing: 6,
                   children: [
-                    RiskBadge(band: player.riskBand, score: player.riskScore, large: true, pulse: player.riskBand == 'HIGH'),
                     ReadinessBadge(score: player.readinessScore),
+                    RiskBadge(
+                        band: player.riskBand,
+                        score: player.riskScore,
+                        pulse: player.riskBand == 'HIGH'),
                   ],
                 ).animate().fadeIn(delay: 200.ms),
               ],
@@ -192,23 +207,30 @@ class _PlayerHeader extends StatelessWidget {
           ),
 
           // Gauge
-          _RiskGauge(
-            score: player.riskScore,
-            band: player.riskBand,
+          _ReadinessGauge(
+            score: player.readinessScore,
             controller: gaugeCtrl,
-          ).animate().fadeIn(delay: 300.ms).scale(duration: 500.ms, curve: Curves.elasticOut),
+          )
+              .animate()
+              .fadeIn(delay: 300.ms)
+              .scale(duration: 500.ms, curve: Curves.elasticOut),
         ],
       ),
     );
   }
 }
 
-class _RiskGauge extends StatelessWidget {
+class _ReadinessGauge extends StatelessWidget {
   final double score;
-  final String band;
   final AnimationController controller;
 
-  const _RiskGauge({required this.score, required this.band, required this.controller});
+  const _ReadinessGauge({required this.score, required this.controller});
+
+  Color _getColor(double v) {
+    if (v >= 80) return AppColors.readinessGreen;
+    if (v >= 50) return AppColors.readinessAmber;
+    return AppColors.readinessPink;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -216,26 +238,34 @@ class _RiskGauge extends StatelessWidget {
       animation: controller,
       builder: (_, __) {
         final animated = score * controller.value;
+        final color = _getColor(score);
         return SizedBox(
-          width: 70, height: 70,
+          width: 70,
+          height: 70,
           child: Stack(
             alignment: Alignment.center,
             children: [
               SizedBox(
-                width: 70, height: 70,
+                width: 70,
+                height: 70,
                 child: CircularProgressIndicator(
                   value: animated / 100,
                   strokeWidth: 6,
                   backgroundColor: AppColors.surfaceBorder,
-                  valueColor: AlwaysStoppedAnimation(AppColors.colorForRisk(band)),
+                  valueColor: AlwaysStoppedAnimation(color),
                 ),
               ),
-              Text(
-                animated.toInt().toString(),
-                style: AppTextStyles.monoMedium.copyWith(
-                  color: AppColors.colorForRisk(band),
-                  fontSize: 16,
-                ),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '${animated.toInt()}%',
+                    style: AppTextStyles.monoMedium.copyWith(
+                      color: color,
+                      fontSize: 16,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -258,39 +288,45 @@ class _PlayerContent extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Charts
-        _SectionHeader(title: 'Risk Trend', icon: Icons.show_chart_rounded),
+        // Charts & Why Flagged Group
+        _SectionHeader(
+            title: 'Risk Trend & Drivers', icon: Icons.show_chart_rounded),
         const SizedBox(height: 10),
         _RiskChart(data: detail.weeklyLoad),
+        const SizedBox(height: AppConstants.spacingM),
+        _WhyFlaggedCard(drivers: detail.riskDrivers),
 
         const SizedBox(height: AppConstants.spacingL),
 
-        _SectionHeader(title: 'Load: Acute vs Chronic', icon: Icons.bar_chart_rounded),
+        _SectionHeader(
+            title: 'Load: Acute vs Chronic', icon: Icons.bar_chart_rounded),
         const SizedBox(height: 10),
         _LoadChart(data: detail.weeklyLoad),
 
         const SizedBox(height: AppConstants.spacingL),
 
-        // Why flagged
-        _SectionHeader(title: 'Why Flagged', icon: Icons.warning_amber_rounded, color: AppColors.colorForRisk(player.riskBand)),
-        const SizedBox(height: 10),
-        _WhyFlaggedCard(drivers: detail.riskDrivers),
-
-        const SizedBox(height: AppConstants.spacingL),
-
         // Similar cases
-        _SectionHeader(title: 'Similar Cases (Vector Search)', icon: Icons.manage_search_rounded, color: AppColors.accent),
+        _SectionHeader(
+            title: 'Similar Cases (Vector Search)',
+            icon: Icons.manage_search_rounded,
+            color: AppColors.textPrimary),
         const SizedBox(height: 4),
-        Text('Powered by Actian VectorAI DB · RAG retrieval', style: AppTextStyles.caption.copyWith(color: AppColors.accent)),
+        Text('Powered by Actian VectorAI DB · RAG retrieval',
+            style:
+                AppTextStyles.caption.copyWith(color: AppColors.textPrimary)),
         const SizedBox(height: 10),
         _SimilarCasesSection(player: player),
 
         const SizedBox(height: AppConstants.spacingL),
 
         // Action plan
-        _SectionHeader(title: 'Coach Action Plan', icon: Icons.auto_awesome_rounded, color: AppColors.riskLow),
+        _SectionHeader(
+            title: 'Coach Action Plan',
+            icon: Icons.auto_awesome_rounded,
+            color: AppColors.riskLow),
         const SizedBox(height: 4),
-        Text('Generated by Gemini · Evidence-backed', style: AppTextStyles.caption.copyWith(color: AppColors.riskLow)),
+        Text('Generated by Gemini · Evidence-backed',
+            style: AppTextStyles.caption.copyWith(color: AppColors.riskLow)),
         const SizedBox(height: 10),
         _ActionPlanSection(player: player),
 
@@ -305,7 +341,10 @@ class _SectionHeader extends StatelessWidget {
   final IconData icon;
   final Color color;
 
-  const _SectionHeader({required this.title, required this.icon, this.color = AppColors.textPrimary});
+  const _SectionHeader(
+      {required this.title,
+      required this.icon,
+      this.color = AppColors.textPrimary});
 
   @override
   Widget build(BuildContext context) {
@@ -326,8 +365,11 @@ class _RiskChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final spots = data.asMap().entries.map((e) =>
-        FlSpot(e.key.toDouble(), e.value.riskScore)).toList();
+    final spots = data
+        .asMap()
+        .entries
+        .map((e) => FlSpot(e.key.toDouble(), e.value.riskScore))
+        .toList();
 
     return Container(
       height: 160,
@@ -342,14 +384,16 @@ class _RiskChart extends StatelessWidget {
           gridData: FlGridData(
             show: true,
             drawVerticalLine: false,
-            getDrawingHorizontalLine: (_) => FlLine(color: AppColors.chartGrid, strokeWidth: 1),
+            getDrawingHorizontalLine: (_) =>
+                FlLine(color: AppColors.chartGrid, strokeWidth: 1),
           ),
           titlesData: FlTitlesData(
             leftTitles: AxisTitles(
               sideTitles: SideTitles(
                 showTitles: true,
                 reservedSize: 32,
-                getTitlesWidget: (v, _) => Text(v.toInt().toString(), style: AppTextStyles.caption),
+                getTitlesWidget: (v, _) =>
+                    Text(v.toInt().toString(), style: AppTextStyles.caption),
               ),
             ),
             bottomTitles: AxisTitles(
@@ -358,14 +402,17 @@ class _RiskChart extends StatelessWidget {
                 getTitlesWidget: (v, _) {
                   final i = v.toInt();
                   if (i >= 0 && i < data.length) {
-                    return Text(data[i].weekLabel, style: AppTextStyles.caption);
+                    return Text(data[i].weekLabel,
+                        style: AppTextStyles.caption);
                   }
                   return const SizedBox.shrink();
                 },
               ),
             ),
-            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            rightTitles:
+                const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            topTitles:
+                const AxisTitles(sideTitles: SideTitles(showTitles: false)),
           ),
           borderData: FlBorderData(show: false),
           minY: 0, maxY: 100,
@@ -374,7 +421,10 @@ class _RiskChart extends StatelessWidget {
               spots: spots,
               isCurved: true,
               gradient: LinearGradient(
-                colors: [AppColors.colorForRisk('LOW'), AppColors.colorForRisk('HIGH')],
+                colors: [
+                  AppColors.colorForRisk('LOW'),
+                  AppColors.colorForRisk('HIGH')
+                ],
               ),
               barWidth: 2.5,
               isStrokeCapRound: true,
@@ -383,7 +433,11 @@ class _RiskChart extends StatelessWidget {
                 getDotPainter: (spot, _, __, ___) => FlDotCirclePainter(
                   radius: 4,
                   color: AppColors.colorForRisk(
-                    spot.y >= 66 ? 'HIGH' : spot.y >= 36 ? 'MED' : 'LOW',
+                    spot.y >= 66
+                        ? 'HIGH'
+                        : spot.y >= 36
+                            ? 'MED'
+                            : 'LOW',
                   ),
                   strokeWidth: 0,
                 ),
@@ -392,8 +446,8 @@ class _RiskChart extends StatelessWidget {
                 show: true,
                 gradient: LinearGradient(
                   colors: [
-                    AppColors.chartLine1.withOpacity(0.2),
-                    AppColors.chartLine1.withOpacity(0),
+                    AppColors.chartLine1.withValues(alpha: 0.2),
+                    AppColors.chartLine1.withValues(alpha: 0),
                   ],
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
@@ -404,9 +458,15 @@ class _RiskChart extends StatelessWidget {
           // Risk band lines
           extraLinesData: ExtraLinesData(
             horizontalLines: [
-              HorizontalLine(y: 36, color: AppColors.riskMed.withOpacity(0.3), strokeWidth: 1,
+              HorizontalLine(
+                  y: 36,
+                  color: AppColors.riskMed.withValues(alpha: 0.3),
+                  strokeWidth: 1,
                   dashArray: [4, 4]),
-              HorizontalLine(y: 66, color: AppColors.riskHigh.withOpacity(0.3), strokeWidth: 1,
+              HorizontalLine(
+                  y: 66,
+                  color: AppColors.riskHigh.withValues(alpha: 0.3),
+                  strokeWidth: 1,
                   dashArray: [4, 4]),
             ],
           ),
@@ -425,10 +485,16 @@ class _LoadChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final acuteSpots = data.asMap().entries.map((e) =>
-        FlSpot(e.key.toDouble(), e.value.acuteLoad)).toList();
-    final chronicSpots = data.asMap().entries.map((e) =>
-        FlSpot(e.key.toDouble(), e.value.chronicLoad)).toList();
+    final acuteSpots = data
+        .asMap()
+        .entries
+        .map((e) => FlSpot(e.key.toDouble(), e.value.acuteLoad))
+        .toList();
+    final chronicSpots = data
+        .asMap()
+        .entries
+        .map((e) => FlSpot(e.key.toDouble(), e.value.chronicLoad))
+        .toList();
 
     return Container(
       height: 160,
@@ -456,14 +522,16 @@ class _LoadChart extends StatelessWidget {
                 gridData: FlGridData(
                   show: true,
                   drawVerticalLine: false,
-                  getDrawingHorizontalLine: (_) => FlLine(color: AppColors.chartGrid, strokeWidth: 1),
+                  getDrawingHorizontalLine: (_) =>
+                      FlLine(color: AppColors.chartGrid, strokeWidth: 1),
                 ),
                 titlesData: FlTitlesData(
                   leftTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
                       reservedSize: 36,
-                      getTitlesWidget: (v, _) => Text(v.toInt().toString(), style: AppTextStyles.caption),
+                      getTitlesWidget: (v, _) => Text(v.toInt().toString(),
+                          style: AppTextStyles.caption),
                     ),
                   ),
                   bottomTitles: AxisTitles(
@@ -471,13 +539,17 @@ class _LoadChart extends StatelessWidget {
                       showTitles: true,
                       getTitlesWidget: (v, _) {
                         final i = v.toInt();
-                        if (i >= 0 && i < data.length) return Text(data[i].weekLabel, style: AppTextStyles.caption);
+                        if (i >= 0 && i < data.length)
+                          return Text(data[i].weekLabel,
+                              style: AppTextStyles.caption);
                         return const SizedBox.shrink();
                       },
                     ),
                   ),
-                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  rightTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false)),
+                  topTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false)),
                 ),
                 borderData: FlBorderData(show: false),
                 lineBarsData: [
@@ -489,7 +561,7 @@ class _LoadChart extends StatelessWidget {
                     dotData: const FlDotData(show: false),
                     belowBarData: BarAreaData(
                       show: true,
-                      color: AppColors.chartLine1.withOpacity(0.08),
+                      color: AppColors.chartLine1.withValues(alpha: 0.08),
                     ),
                   ),
                   LineChartBarData(
@@ -551,20 +623,24 @@ class _WhyFlaggedCard extends StatelessWidget {
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               border: i < drivers.length - 1
-                  ? const Border(bottom: BorderSide(color: AppColors.surfaceBorder))
+                  ? const Border(
+                      bottom: BorderSide(color: AppColors.surfaceBorder))
                   : null,
             ),
             child: Row(
               children: [
                 // Rank pill
                 Container(
-                  width: 24, height: 24,
+                  width: 24,
+                  height: 24,
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.12),
+                    color: color.withValues(alpha: 0.12),
                     shape: BoxShape.circle,
                   ),
                   child: Center(
-                    child: Text('${i + 1}', style: AppTextStyles.caption.copyWith(color: color, fontWeight: FontWeight.w700)),
+                    child: Text('${i + 1}',
+                        style: AppTextStyles.caption.copyWith(
+                            color: color, fontWeight: FontWeight.w700)),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -574,7 +650,9 @@ class _WhyFlaggedCard extends StatelessWidget {
                     children: [
                       Text(driver.label, style: AppTextStyles.labelMedium),
                       const SizedBox(height: 2),
-                      Text(driver.value, style: AppTextStyles.monoSmall.copyWith(color: color)),
+                      Text(driver.value,
+                          style:
+                              AppTextStyles.monoSmall.copyWith(color: color)),
                       Text(driver.threshold, style: AppTextStyles.caption),
                     ],
                   ),
@@ -586,7 +664,11 @@ class _WhyFlaggedCard extends StatelessWidget {
                       : driver.trend == 'DOWN'
                           ? Icons.trending_down_rounded
                           : Icons.trending_flat_rounded,
-                  color: driver.trend == 'UP' ? AppColors.riskHigh : driver.trend == 'DOWN' ? AppColors.riskLow : AppColors.textMuted,
+                  color: driver.trend == 'UP'
+                      ? AppColors.riskHigh
+                      : driver.trend == 'DOWN'
+                          ? AppColors.riskLow
+                          : AppColors.textMuted,
                   size: 20,
                 ),
               ],
@@ -625,14 +707,17 @@ class _SimilarCasesSectionState extends State<_SimilarCasesSection> {
           decoration: BoxDecoration(
             color: AppColors.surface,
             borderRadius: BorderRadius.circular(AppConstants.radiusL),
-            border: Border.all(color: AppColors.accent.withOpacity(0.3)),
+            border: Border.all(color: AppColors.textPrimary.withValues(alpha: 0.3)),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.manage_search_rounded, color: AppColors.accent, size: 18),
+              const Icon(Icons.manage_search_rounded,
+                  color: AppColors.textPrimary, size: 18),
               const SizedBox(width: 10),
-              Text('Find Similar Cases', style: AppTextStyles.labelMedium.copyWith(color: AppColors.accent)),
+              Text('Find Similar Cases',
+                  style: AppTextStyles.labelMedium
+                      .copyWith(color: AppColors.textPrimary)),
             ],
           ),
         ),
@@ -644,76 +729,102 @@ class _SimilarCasesSectionState extends State<_SimilarCasesSection> {
         children: [
           const SizedBox(height: 8),
           Row(children: [
-            const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(color: AppColors.accent, strokeWidth: 2)),
+            const SizedBox(
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(
+                    color: AppColors.textPrimary, strokeWidth: 2)),
             const SizedBox(width: 10),
-            Text('Searching vector database...', style: AppTextStyles.bodySmall.copyWith(color: AppColors.accent)),
+            Text('Searching vector database...',
+                style: AppTextStyles.bodySmall
+                    .copyWith(color: AppColors.textPrimary)),
           ]),
         ],
       );
     }
 
     final cases = pp.currentSimilar ?? [];
-    return Column(
-      children: cases.asMap().entries.map((entry) {
-        final i = entry.key;
-        final c = entry.value;
-        final simPct = (c.similarityScore * 100).toInt();
+    return SizedBox(
+      height: 220,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        itemCount: cases.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 12),
+        itemBuilder: (context, i) {
+          final c = cases[i];
+          final simPct = (c.similarityScore * 100).toInt();
 
-        return Container(
-          margin: const EdgeInsets.only(bottom: 8),
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(AppConstants.radiusL),
-            border: Border.all(color: AppColors.surfaceBorder),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(c.playerName, style: AppTextStyles.labelMedium),
-                  Row(children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: AppColors.accent.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(AppConstants.radiusCircle),
-                      ),
-                      child: Text('$simPct% match', style: AppTextStyles.caption.copyWith(color: AppColors.accent)),
-                    ),
-                  ]),
-                ],
-              ),
-              const SizedBox(height: 4),
-              Text(c.weekLabel, style: AppTextStyles.caption),
-              const SizedBox(height: 6),
-              Text(c.summary, style: AppTextStyles.bodySmall),
-              const SizedBox(height: 6),
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: AppColors.riskLow.withOpacity(0.06),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppColors.riskLow.withOpacity(0.2)),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+          return Container(
+            width: 280,
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(AppConstants.radiusL),
+              border: Border.all(color: AppColors.surfaceBorder),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Icon(Icons.check_circle_outline, color: AppColors.riskLow, size: 13),
-                    const SizedBox(width: 6),
-                    Expanded(child: Text(c.outcome, style: AppTextStyles.caption.copyWith(color: AppColors.riskLow))),
+                    Text(c.playerName, style: AppTextStyles.labelMedium),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: AppColors.textPrimary.withValues(alpha: 0.1),
+                        borderRadius:
+                            BorderRadius.circular(AppConstants.radiusCircle),
+                      ),
+                      child: Text('$simPct% match',
+                          style: AppTextStyles.caption
+                              .copyWith(color: AppColors.textPrimary)),
+                    ),
                   ],
                 ),
-              ),
-            ],
-          ),
-        )
-            .animate(delay: Duration(milliseconds: i * 100))
-            .fadeIn(duration: 400.ms)
-            .slideY(begin: 0.05, end: 0);
-      }).toList(),
+                const SizedBox(height: 4),
+                Text(c.weekLabel, style: AppTextStyles.caption),
+                const SizedBox(height: 8),
+                Expanded(
+                  child: Text(c.summary,
+                      style: AppTextStyles.bodySmall,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.riskLow.withValues(alpha: 0.06),
+                    borderRadius: BorderRadius.circular(8),
+                    border:
+                        Border.all(color: AppColors.riskLow.withValues(alpha: 0.2)),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.check_circle_outline,
+                          color: AppColors.riskLow, size: 13),
+                      const SizedBox(width: 6),
+                      Expanded(
+                          child: Text(c.outcome,
+                              style: AppTextStyles.caption
+                                  .copyWith(color: AppColors.riskLow),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          )
+              .animate(delay: Duration(milliseconds: i * 100))
+              .fadeIn(duration: 400.ms)
+              .slideX(begin: 0.1, end: 0);
+        },
+      ),
     );
   }
 }
@@ -745,25 +856,33 @@ class _ActionPlanSectionState extends State<_ActionPlanSection> {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [AppColors.riskLow.withOpacity(0.1), AppColors.accent.withOpacity(0.1)],
+              colors: [
+                AppColors.riskLow.withValues(alpha: 0.1),
+                AppColors.accent.withValues(alpha: 0.1)
+              ],
             ),
             borderRadius: BorderRadius.circular(AppConstants.radiusL),
-            border: Border.all(color: AppColors.riskLow.withOpacity(0.3)),
+            border: Border.all(color: AppColors.riskLow.withValues(alpha: 0.3)),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.auto_awesome_rounded, color: AppColors.riskLow, size: 18),
+              const Icon(Icons.auto_awesome_rounded,
+                  color: AppColors.riskLow, size: 18),
               const SizedBox(width: 10),
-              Text('Generate Coach Action Plan', style: AppTextStyles.labelMedium.copyWith(color: AppColors.riskLow)),
+              Text('Generate Coach Action Plan',
+                  style: AppTextStyles.labelMedium
+                      .copyWith(color: AppColors.riskLow)),
               const SizedBox(width: 6),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: AppColors.riskLow.withOpacity(0.15),
+                  color: AppColors.riskLow.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(6),
                 ),
-                child: Text('Gemini + RAG', style: AppTextStyles.caption.copyWith(color: AppColors.riskLow)),
+                child: Text('Gemini + RAG',
+                    style: AppTextStyles.caption
+                        .copyWith(color: AppColors.riskLow)),
               ),
             ],
           ),
@@ -781,11 +900,15 @@ class _ActionPlanSectionState extends State<_ActionPlanSection> {
         ),
         child: Column(
           children: [
-            const CircularProgressIndicator(color: AppColors.riskLow, strokeWidth: 2.5),
+            const CircularProgressIndicator(
+                color: AppColors.riskLow, strokeWidth: 2.5),
             const SizedBox(height: 14),
-            Text('Generating plan with Gemini...', style: AppTextStyles.bodySmall.copyWith(color: AppColors.riskLow)),
+            Text('Generating plan with Gemini...',
+                style:
+                    AppTextStyles.bodySmall.copyWith(color: AppColors.riskLow)),
             const SizedBox(height: 4),
-            Text('Retrieving similar cases from VectorAI DB...', style: AppTextStyles.caption),
+            Text('Retrieving similar cases from VectorAI DB...',
+                style: AppTextStyles.caption),
           ],
         ),
       );
@@ -808,10 +931,10 @@ class _ActionPlanCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppConstants.radiusL),
-        border: Border.all(color: AppColors.riskLow.withOpacity(0.3)),
+        border: Border.all(color: AppColors.riskLow.withValues(alpha: 0.3)),
         boxShadow: [
           BoxShadow(
-            color: AppColors.riskLow.withOpacity(0.08),
+            color: AppColors.riskLow.withValues(alpha: 0.08),
             blurRadius: 20,
           ),
         ],
@@ -823,16 +946,22 @@ class _ActionPlanCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: AppColors.riskLow.withOpacity(0.08),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(AppConstants.radiusL)),
+              color: AppColors.riskLow.withValues(alpha: 0.08),
+              borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(AppConstants.radiusL)),
             ),
             child: Row(
               children: [
-                const Icon(Icons.auto_awesome_rounded, color: AppColors.riskLow, size: 16),
+                const Icon(Icons.auto_awesome_rounded,
+                    color: AppColors.riskLow, size: 16),
                 const SizedBox(width: 8),
-                Text('Coach Action Plan', style: AppTextStyles.labelMedium.copyWith(color: AppColors.riskLow)),
+                Text('Coach Action Plan',
+                    style: AppTextStyles.labelMedium
+                        .copyWith(color: AppColors.riskLow)),
                 const Spacer(),
-                Text('Gemini + RAG', style: AppTextStyles.caption.copyWith(color: AppColors.riskLow)),
+                Text('Gemini + RAG',
+                    style: AppTextStyles.caption
+                        .copyWith(color: AppColors.riskLow)),
               ],
             ),
           ),
@@ -843,7 +972,9 @@ class _ActionPlanCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Summary
-                Text(plan.summary, style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textPrimary, height: 1.6)),
+                Text(plan.summary,
+                    style: AppTextStyles.bodyMedium
+                        .copyWith(color: AppColors.textPrimary, height: 1.6)),
 
                 const SizedBox(height: 16),
 
@@ -871,18 +1002,21 @@ class _ActionPlanCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppColors.riskHigh.withOpacity(0.06),
+                    color: AppColors.riskHigh.withValues(alpha: 0.06),
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: AppColors.riskHigh.withOpacity(0.2)),
+                    border:
+                        Border.all(color: AppColors.riskHigh.withValues(alpha: 0.2)),
                   ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.warning_amber_rounded, color: AppColors.riskHigh, size: 14),
+                      const Icon(Icons.warning_amber_rounded,
+                          color: AppColors.riskHigh, size: 14),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(plan.caution,
-                            style: AppTextStyles.bodySmall.copyWith(color: AppColors.riskMed)),
+                            style: AppTextStyles.bodySmall
+                                .copyWith(color: AppColors.riskMed)),
                       ),
                     ],
                   ),
@@ -905,7 +1039,11 @@ class _PlanSection extends StatelessWidget {
   final Color color;
   final List<String> items;
 
-  const _PlanSection({required this.label, required this.icon, required this.color, required this.items});
+  const _PlanSection(
+      {required this.label,
+      required this.icon,
+      required this.color,
+      required this.items});
 
   @override
   Widget build(BuildContext context) {
@@ -915,7 +1053,9 @@ class _PlanSection extends StatelessWidget {
         Row(children: [
           Icon(icon, size: 13, color: color),
           const SizedBox(width: 6),
-          Text(label, style: AppTextStyles.labelSmall.copyWith(color: color, letterSpacing: 0.5)),
+          Text(label,
+              style: AppTextStyles.labelSmall
+                  .copyWith(color: color, letterSpacing: 0.5)),
         ]),
         const SizedBox(height: 8),
         ...items.asMap().entries.map((entry) {
@@ -927,18 +1067,23 @@ class _PlanSection extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  width: 20, height: 20,
+                  width: 20,
+                  height: 20,
                   margin: const EdgeInsets.only(top: 1),
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.12),
+                    color: color.withValues(alpha: 0.12),
                     shape: BoxShape.circle,
                   ),
                   child: Center(
-                    child: Text('${i + 1}', style: AppTextStyles.caption.copyWith(color: color, fontWeight: FontWeight.w700)),
+                    child: Text('${i + 1}',
+                        style: AppTextStyles.caption.copyWith(
+                            color: color, fontWeight: FontWeight.w700)),
                   ),
                 ),
                 const SizedBox(width: 10),
-                Expanded(child: Text(item, style: AppTextStyles.bodySmall.copyWith(height: 1.5))),
+                Expanded(
+                    child: Text(item,
+                        style: AppTextStyles.bodySmall.copyWith(height: 1.5))),
               ],
             ),
           );

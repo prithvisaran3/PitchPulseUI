@@ -40,14 +40,16 @@ class PlayerModel {
         name: json['name'] as String,
         position: json['position'] as String? ?? 'MID',
         nationality: json['nationality'] as String?,
-        jerseyNumber: json['jersey_number'] as int?,
-        photoUrl: json['photo_url'] as String?,
+        jerseyNumber: (json['jersey_number'] ?? json['jersey']) as int?,
+        photoUrl: (json['photo_url'] ?? json['avatar_url']) as String?,
         age: json['age'] as int?,
-        riskScore: (json['risk_score'] as num?)?.toDouble() ?? 0,
-        riskBand: json['risk_band'] as String? ?? 'LOW',
+        riskScore:
+            (json['risk_score'] ?? json['acwr_score'] as num?)?.toDouble() ?? 0,
+        riskBand: (json['risk_band'] ?? json['acwr_band']) as String? ?? 'LOW',
         readinessScore: (json['readiness_score'] as num?)?.toDouble() ?? 100,
         readinessBand: json['readiness_band'] as String? ?? 'LOW',
-        topDrivers: (json['top_drivers'] as List<dynamic>?)
+        // Keerthi's action_plan maps `why` array into top_drivers on squad cards
+        topDrivers: ((json['top_drivers'] ?? json['why']) as List<dynamic>?)
                 ?.map((e) => e as String)
                 .toList() ??
             [],
@@ -59,75 +61,187 @@ class PlayerModel {
 
   static List<PlayerModel> demoSquad() => [
         const PlayerModel(
-          id: 'p1', name: 'Thibaut Courtois', position: 'GK', jerseyNumber: 1, age: 32,
-          riskScore: 22, riskBand: 'LOW', readinessScore: 88, readinessBand: 'LOW',
+          id: 'p1',
+          name: 'Thibaut Courtois',
+          position: 'GK',
+          jerseyNumber: 1,
+          age: 32,
+          riskScore: 22,
+          riskBand: 'LOW',
+          readinessScore: 88,
+          readinessBand: 'LOW',
           topDrivers: ['Normal load', 'Good recovery', 'Consistent training'],
           riskSparkline: [18, 20, 22, 19, 24, 22],
         ),
         const PlayerModel(
-          id: 'p2', name: 'Dani Carvajal', position: 'RB', jerseyNumber: 2, age: 33,
-          riskScore: 71, riskBand: 'HIGH', readinessScore: 42, readinessBand: 'HIGH',
+          id: 'p2',
+          name: 'Dani Carvajal',
+          position: 'RB',
+          jerseyNumber: 2,
+          age: 33,
+          riskScore: 71,
+          riskBand: 'HIGH',
+          readinessScore: 42,
+          readinessBand: 'HIGH',
           topDrivers: ['ACWR 1.8 (spike)', 'HSR 340m (↑62%)', 'Monotony 2.4'],
           riskSparkline: [30, 38, 45, 55, 65, 71],
         ),
         const PlayerModel(
-          id: 'p3', name: 'Éder Militão', position: 'CB', jerseyNumber: 3, age: 27,
-          riskScore: 48, riskBand: 'MED', readinessScore: 65, readinessBand: 'MED',
-          topDrivers: ['Acute load elevated', 'Return from injury', '3 games in 7d'],
+          id: 'p3',
+          name: 'Éder Militão',
+          position: 'CB',
+          jerseyNumber: 3,
+          age: 27,
+          riskScore: 48,
+          riskBand: 'MED',
+          readinessScore: 65,
+          readinessBand: 'MED',
+          topDrivers: [
+            'Acute load elevated',
+            'Return from injury',
+            '3 games in 7d'
+          ],
           riskSparkline: [20, 25, 35, 42, 46, 48],
         ),
         const PlayerModel(
-          id: 'p4', name: 'David Alaba', position: 'CB', jerseyNumber: 4, age: 32,
-          riskScore: 31, riskBand: 'LOW', readinessScore: 82, readinessBand: 'LOW',
+          id: 'p4',
+          name: 'David Alaba',
+          position: 'CB',
+          jerseyNumber: 4,
+          age: 32,
+          riskScore: 31,
+          riskBand: 'LOW',
+          readinessScore: 82,
+          readinessBand: 'LOW',
           topDrivers: ['Steady chronic base', 'Low strain', 'Adequate rest'],
           riskSparkline: [28, 30, 29, 32, 30, 31],
         ),
         const PlayerModel(
-          id: 'p5', name: 'Ferland Mendy', position: 'LB', jerseyNumber: 23, age: 29,
-          riskScore: 56, riskBand: 'MED', readinessScore: 58, readinessBand: 'MED',
+          id: 'p5',
+          name: 'Ferland Mendy',
+          position: 'LB',
+          jerseyNumber: 23,
+          age: 29,
+          riskScore: 56,
+          riskBand: 'MED',
+          readinessScore: 58,
+          readinessBand: 'MED',
           topDrivers: ['Chronic dip', '2 yellow cards stress', 'HSR load'],
           riskSparkline: [40, 44, 50, 53, 55, 56],
         ),
         const PlayerModel(
-          id: 'p6', name: 'Aurelien Tchouameni', position: 'CDM', jerseyNumber: 18, age: 25,
-          riskScore: 28, riskBand: 'LOW', readinessScore: 91, readinessBand: 'LOW',
-          topDrivers: ['Excellent ACWR 0.9', 'High chronic base', 'Good sleep proxy'],
+          id: 'p6',
+          name: 'Aurelien Tchouameni',
+          position: 'CDM',
+          jerseyNumber: 18,
+          age: 25,
+          riskScore: 28,
+          riskBand: 'LOW',
+          readinessScore: 91,
+          readinessBand: 'LOW',
+          topDrivers: [
+            'Excellent ACWR 0.9',
+            'High chronic base',
+            'Good sleep proxy'
+          ],
           riskSparkline: [25, 28, 26, 29, 27, 28],
         ),
         const PlayerModel(
-          id: 'p7', name: 'Federico Valverde', position: 'CM', jerseyNumber: 15, age: 26,
-          riskScore: 42, riskBand: 'MED', readinessScore: 72, readinessBand: 'LOW',
-          topDrivers: ['Slight ACWR rise', 'High sprint load', 'Busy fixture schedule'],
+          id: 'p7',
+          name: 'Federico Valverde',
+          position: 'CM',
+          jerseyNumber: 15,
+          age: 26,
+          riskScore: 42,
+          riskBand: 'MED',
+          readinessScore: 72,
+          readinessBand: 'LOW',
+          topDrivers: [
+            'Slight ACWR rise',
+            'High sprint load',
+            'Busy fixture schedule'
+          ],
           riskSparkline: [30, 33, 36, 39, 41, 42],
         ),
         const PlayerModel(
-          id: 'p8', name: 'Luka Modrić', position: 'CM', jerseyNumber: 10, age: 39,
-          riskScore: 62, riskBand: 'MED', readinessScore: 55, readinessBand: 'MED',
-          topDrivers: ['Age-adjusted load', 'Dense schedule', 'Cumulative strain 380'],
+          id: 'p8',
+          name: 'Luka Modrić',
+          position: 'CM',
+          jerseyNumber: 10,
+          age: 39,
+          riskScore: 62,
+          riskBand: 'MED',
+          readinessScore: 55,
+          readinessBand: 'MED',
+          topDrivers: [
+            'Age-adjusted load',
+            'Dense schedule',
+            'Cumulative strain 380'
+          ],
           riskSparkline: [48, 52, 55, 58, 60, 62],
         ),
         const PlayerModel(
-          id: 'p9', name: 'Rodrygo', position: 'RW', jerseyNumber: 11, age: 24,
-          riskScore: 19, riskBand: 'LOW', readinessScore: 95, readinessBand: 'LOW',
+          id: 'p9',
+          name: 'Rodrygo',
+          position: 'RW',
+          jerseyNumber: 11,
+          age: 24,
+          riskScore: 19,
+          riskBand: 'LOW',
+          readinessScore: 95,
+          readinessBand: 'LOW',
           topDrivers: ['Low acute load', 'Consistent output', 'Fresh legs'],
           riskSparkline: [22, 20, 18, 19, 18, 19],
         ),
         const PlayerModel(
-          id: 'p10', name: 'Jude Bellingham', position: 'AM', jerseyNumber: 5, age: 21,
-          riskScore: 79, riskBand: 'HIGH', readinessScore: 38, readinessBand: 'HIGH',
-          topDrivers: ['ACWR 2.1 (critical)', 'Sprints 420m (↑89%)', 'No rest day logged'],
+          id: 'p10',
+          name: 'Jude Bellingham',
+          position: 'AM',
+          jerseyNumber: 5,
+          age: 21,
+          riskScore: 79,
+          riskBand: 'HIGH',
+          readinessScore: 38,
+          readinessBand: 'HIGH',
+          topDrivers: [
+            'ACWR 2.1 (critical)',
+            'Sprints 420m (↑89%)',
+            'No rest day logged'
+          ],
           riskSparkline: [25, 38, 52, 63, 72, 79],
         ),
         const PlayerModel(
-          id: 'p11', name: 'Vinícius Jr.', position: 'LW', jerseyNumber: 7, age: 24,
-          riskScore: 35, riskBand: 'LOW', readinessScore: 84, readinessBand: 'LOW',
-          topDrivers: ['Stable chronic', 'Good sprint recovery', 'Optimal ACWR'],
+          id: 'p11',
+          name: 'Vinícius Jr.',
+          position: 'LW',
+          jerseyNumber: 7,
+          age: 24,
+          riskScore: 35,
+          riskBand: 'LOW',
+          readinessScore: 84,
+          readinessBand: 'LOW',
+          topDrivers: [
+            'Stable chronic',
+            'Good sprint recovery',
+            'Optimal ACWR'
+          ],
           riskSparkline: [38, 36, 35, 34, 35, 35],
         ),
         const PlayerModel(
-          id: 'p12', name: 'Kylian Mbappé', position: 'ST', jerseyNumber: 9, age: 26,
-          riskScore: 45, riskBand: 'MED', readinessScore: 70, readinessBand: 'LOW',
-          topDrivers: ['High sprint demand', 'Adaptation phase', 'International duty load'],
+          id: 'p12',
+          name: 'Kylian Mbappé',
+          position: 'ST',
+          jerseyNumber: 9,
+          age: 26,
+          riskScore: 45,
+          riskBand: 'MED',
+          readinessScore: 70,
+          readinessBand: 'LOW',
+          topDrivers: [
+            'High sprint demand',
+            'Adaptation phase',
+            'International duty load'
+          ],
           riskSparkline: [52, 50, 48, 47, 46, 45],
         ),
       ];
@@ -145,8 +259,10 @@ class PlayerDetailModel {
   });
 
   factory PlayerDetailModel.fromJson(Map<String, dynamic> json) {
+    // Handle both nested {player: {...}, weekly_load: [...]} and flat root response
+    final playerJson = json['player'] as Map<String, dynamic>? ?? json;
     return PlayerDetailModel(
-      player: PlayerModel.fromJson(json['player'] as Map<String, dynamic>),
+      player: PlayerModel.fromJson(playerJson),
       weeklyLoad: (json['weekly_load'] as List<dynamic>?)
               ?.map((e) => WeeklyLoadPoint.fromJson(e as Map<String, dynamic>))
               .toList() ??
@@ -171,7 +287,9 @@ class PlayerDetailModel {
           weekStart: week,
           acuteLoad: acute,
           chronicLoad: chronic,
-          riskScore: player.riskSparkline.length > i ? player.riskSparkline[i] : player.riskScore,
+          riskScore: player.riskSparkline.length > i
+              ? player.riskSparkline[i]
+              : player.riskScore,
         );
       }),
       riskDrivers: player.topDrivers.asMap().entries.map((entry) {
@@ -181,7 +299,11 @@ class PlayerDetailModel {
           label: label,
           value: _demoValue(idx, player.riskScore),
           threshold: _demoThreshold(idx),
-          trend: idx == 0 ? 'UP' : idx == 1 ? 'UP' : 'STABLE',
+          trend: idx == 0
+              ? 'UP'
+              : idx == 1
+                  ? 'UP'
+                  : 'STABLE',
           severity: idx == 0 ? player.riskBand : 'MED',
         );
       }).toList(),
@@ -190,17 +312,23 @@ class PlayerDetailModel {
 
   static String _demoValue(int idx, double risk) {
     switch (idx) {
-      case 0: return 'ACWR ${(risk / 35).toStringAsFixed(1)}';
-      case 1: return '${(risk * 4).toInt()} min/week';
-      default: return '${(risk * 0.6).toInt()} AU';
+      case 0:
+        return 'ACWR ${(risk / 35).toStringAsFixed(1)}';
+      case 1:
+        return '${(risk * 4).toInt()} min/week';
+      default:
+        return '${(risk * 0.6).toInt()} AU';
     }
   }
 
   static String _demoThreshold(int idx) {
     switch (idx) {
-      case 0: return 'threshold: 1.5';
-      case 1: return 'threshold: 280 min/week';
-      default: return 'threshold: 350 AU';
+      case 0:
+        return 'threshold: 1.5';
+      case 1:
+        return 'threshold: 280 min/week';
+      default:
+        return 'threshold: 350 AU';
     }
   }
 }
@@ -220,7 +348,8 @@ class WeeklyLoadPoint {
     required this.riskScore,
   });
 
-  factory WeeklyLoadPoint.fromJson(Map<String, dynamic> json) => WeeklyLoadPoint(
+  factory WeeklyLoadPoint.fromJson(Map<String, dynamic> json) =>
+      WeeklyLoadPoint(
         weekLabel: json['week_label'] as String,
         weekStart: DateTime.parse(json['week_start'] as String),
         acuteLoad: (json['acute_load'] as num).toDouble(),
@@ -281,31 +410,43 @@ class SimilarCase {
 
   static List<SimilarCase> demoList() => [
         const SimilarCase(
-          playerId: 'hist-p1', playerName: 'N. Kanté', weekLabel: 'W32 23/24',
+          playerId: 'hist-p1',
+          playerName: 'N. Kanté',
+          weekLabel: 'W32 23/24',
           similarityScore: 0.93,
           summary: 'ACWR 1.9, high sprint load post-international break',
           outcome: '2-day rest + reduced intensity → full recovery in 5 days',
         ),
         const SimilarCase(
-          playerId: 'hist-p2', playerName: 'K. De Bruyne', weekLabel: 'W18 22/23',
+          playerId: 'hist-p2',
+          playerName: 'K. De Bruyne',
+          weekLabel: 'W18 22/23',
           similarityScore: 0.88,
           summary: 'Monotony 2.3, 4 matches in 12 days, strain index 420',
           outcome: 'Rotation in next fixture → no injury, ACWR normalized W+2',
         ),
         const SimilarCase(
-          playerId: 'hist-p3', playerName: 'T. Kroos', weekLabel: 'W8 23/24',
+          playerId: 'hist-p3',
+          playerName: 'T. Kroos',
+          weekLabel: 'W8 23/24',
           similarityScore: 0.84,
-          summary: 'Dense schedule, chronic load drop, age-adjusted risk elevation',
-          outcome: 'Active recovery session + nutrition protocol → readiness +18pts',
+          summary:
+              'Dense schedule, chronic load drop, age-adjusted risk elevation',
+          outcome:
+              'Active recovery session + nutrition protocol → readiness +18pts',
         ),
         const SimilarCase(
-          playerId: 'hist-p4', playerName: 'P. Pogba', weekLabel: 'W22 21/22',
+          playerId: 'hist-p4',
+          playerName: 'P. Pogba',
+          weekLabel: 'W22 21/22',
           similarityScore: 0.79,
           summary: 'HSR spike +85%, ACWR 2.0, ignored → soft tissue injury W+1',
           outcome: 'Injury: 3 weeks absence. Lesson: mandatory deload needed',
         ),
         const SimilarCase(
-          playerId: 'hist-p5', playerName: 'S. Busquets', weekLabel: 'W11 22/23',
+          playerId: 'hist-p5',
+          playerName: 'S. Busquets',
+          weekLabel: 'W11 22/23',
           similarityScore: 0.76,
           summary: 'Cumulative strain 390, age risk factor elevated',
           outcome: 'Prophylactic rest + massage therapy → continued season',
@@ -330,11 +471,15 @@ class ActionPlan {
 
   factory ActionPlan.fromJson(Map<String, dynamic> json) => ActionPlan(
         summary: json['summary'] as String,
-        why: (json['why'] as List<dynamic>).map((e) => e as String).toList(),
-        recommendations:
-            (json['recommendations'] as List<dynamic>).map((e) => e as String).toList(),
+        why: ((json['why'] ?? json['top_drivers']) as List<dynamic>)
+            .map((e) => e as String)
+            .toList(),
+        recommendations: (json['recommendations'] as List<dynamic>)
+            .map((e) => e as String)
+            .toList(),
         caution: json['caution'] as String,
-        generatedAt: json['generated_at'] as String? ?? DateTime.now().toIso8601String(),
+        generatedAt:
+            json['generated_at'] as String? ?? DateTime.now().toIso8601String(),
       );
 
   static ActionPlan demo(PlayerModel player) => ActionPlan(

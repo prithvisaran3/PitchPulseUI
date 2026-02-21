@@ -77,7 +77,7 @@ class _SplashScreenState extends State<_SplashScreen> with SingleTickerProviderS
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF4FACFE).withOpacity(0.3 + _controller.value * 0.2),
+                      color: const Color(0xFF4FACFE).withValues(alpha: 0.3 + _controller.value * 0.2),
                       blurRadius: 30,
                       spreadRadius: 5,
                     ),

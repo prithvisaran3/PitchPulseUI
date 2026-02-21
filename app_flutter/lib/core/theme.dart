@@ -6,14 +6,14 @@ import 'package:google_fonts/google_fonts.dart';
 class AppColors {
   AppColors._();
 
-  static const bg = Color(0xFF080C18);
-  static const surface = Color(0xFF111827);
-  static const surfaceElevated = Color(0xFF1A2236);
-  static const surfaceBorder = Color(0xFF1F2D45);
+  static const bg = Color(0xFF000000); // Pure Black
+  static const surface = Color(0xFF0C0C0C); // Very dark gray
+  static const surfaceElevated = Color(0xFF141414); // Slightly lighter gray
+  static const surfaceBorder = Color(0xFF262626); // Dark border
 
   static const textPrimary = Color(0xFFFFFFFF);
-  static const textSecondary = Color(0xFF8FA3BF);
-  static const textMuted = Color(0xFF4A5E78);
+  static const textSecondary = Color(0xFFA0A0A0); // Neutral light gray
+  static const textMuted = Color(0xFF6B6B6B); // Neutral dark gray
 
   // Risk bands
   static const riskLow = Color(0xFF00E5A0);
@@ -29,24 +29,24 @@ class AppColors {
   static const readinessAmber = Color(0xFFFFC107);
   static const readinessPink = Color(0xFFFF5F7E);
 
-  // Accent
-  static const accent = Color(0xFF4FACFE);
-  static const accentEnd = Color(0xFF00F2FE);
+  // Accent (Shifted from Blue to stark White for monochromatic brutalism)
+  static const accent = Color(0xFFFFFFFF); // Pure White
+  static const accentEnd = Color(0xFFD4D4D4); // Light Gray
 
-  // Chart
-  static const chartLine1 = Color(0xFF4FACFE);
+  // Chart (White and semantic red)
+  static const chartLine1 = Color(0xFFFFFFFF);
   static const chartLine2 = Color(0xFFFF5F7E);
-  static const chartGrid = Color(0xFF1F2D45);
+  static const chartGrid = Color(0xFF262626); // Dark border
 
-  // Status
+  // Status (Removed blue, using stark monochrome & semantic)
   static const live = Color(0xFF00E5A0);
   static const pending = Color(0xFFFFC107);
   static const finished = Color(0xFF8FA3BF);
-  static const notStarted = Color(0xFF4FACFE);
+  static const notStarted = Color(0xFFFFFFFF); // White instead of blue
 
   // Gradients
   static const gradientAccent = LinearGradient(
-    colors: [accent, accentEnd],
+    colors: [Color(0xFFFFFFFF), Color(0xFFA0A0A0)],
     begin: Alignment.centerLeft,
     end: Alignment.centerRight,
   );
@@ -70,7 +70,7 @@ class AppColors {
   );
 
   static const gradientBg = LinearGradient(
-    colors: [Color(0xFF080C18), Color(0xFF0D1525)],
+    colors: [Color(0xFF000000), Color(0xFF050505)],
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
   );
@@ -135,9 +135,12 @@ class AppTextStyles {
       );
 
   // Display
-  static TextStyle displayLarge = _sora(32, weight: FontWeight.w700, letterSpacing: -0.5);
-  static TextStyle displayMedium = _sora(24, weight: FontWeight.w700, letterSpacing: -0.3);
-  static TextStyle displaySmall = _sora(20, weight: FontWeight.w600, letterSpacing: -0.2);
+  static TextStyle displayLarge =
+      _sora(32, weight: FontWeight.w700, letterSpacing: -0.5);
+  static TextStyle displayMedium =
+      _sora(24, weight: FontWeight.w700, letterSpacing: -0.3);
+  static TextStyle displaySmall =
+      _sora(20, weight: FontWeight.w600, letterSpacing: -0.2);
 
   // Headline
   static TextStyle headlineLarge = _sora(18, weight: FontWeight.w600);
@@ -145,22 +148,30 @@ class AppTextStyles {
   static TextStyle headlineSmall = _sora(14, weight: FontWeight.w600);
 
   // Body
-  static TextStyle bodyLarge = _sora(15, weight: FontWeight.w400, color: AppColors.textPrimary, height: 1.5);
-  static TextStyle bodyMedium = _sora(13, weight: FontWeight.w400, color: AppColors.textSecondary, height: 1.5);
-  static TextStyle bodySmall = _sora(11, weight: FontWeight.w400, color: AppColors.textMuted, height: 1.4);
+  static TextStyle bodyLarge = _sora(15,
+      weight: FontWeight.w400, color: AppColors.textPrimary, height: 1.5);
+  static TextStyle bodyMedium = _sora(13,
+      weight: FontWeight.w400, color: AppColors.textSecondary, height: 1.5);
+  static TextStyle bodySmall = _sora(11,
+      weight: FontWeight.w400, color: AppColors.textMuted, height: 1.4);
 
   // Label
-  static TextStyle labelLarge = _sora(13, weight: FontWeight.w600, letterSpacing: 0.3);
-  static TextStyle labelMedium = _sora(11, weight: FontWeight.w600, letterSpacing: 0.5);
-  static TextStyle labelSmall = _sora(10, weight: FontWeight.w700, letterSpacing: 0.8);
+  static TextStyle labelLarge =
+      _sora(13, weight: FontWeight.w600, letterSpacing: 0.3);
+  static TextStyle labelMedium =
+      _sora(11, weight: FontWeight.w600, letterSpacing: 0.5);
+  static TextStyle labelSmall =
+      _sora(10, weight: FontWeight.w700, letterSpacing: 0.8);
 
   // Mono / Numeric
   static TextStyle monoLarge = _mono(28, weight: FontWeight.w700);
   static TextStyle monoMedium = _mono(18, weight: FontWeight.w600);
-  static TextStyle monoSmall = _mono(12, weight: FontWeight.w500, color: AppColors.textSecondary);
+  static TextStyle monoSmall =
+      _mono(12, weight: FontWeight.w500, color: AppColors.textSecondary);
 
   // Caption
-  static TextStyle caption = _sora(10, weight: FontWeight.w500, color: AppColors.textMuted, letterSpacing: 0.5);
+  static TextStyle caption = _sora(10,
+      weight: FontWeight.w500, color: AppColors.textMuted, letterSpacing: 0.5);
 }
 
 // ── Theme ─────────────────────────────────────────────────────────────────────
@@ -181,9 +192,9 @@ class AppTheme {
       ),
       textTheme: GoogleFonts.soraTextTheme(
         ThemeData.dark().textTheme.apply(
-          bodyColor: AppColors.textPrimary,
-          displayColor: AppColors.textPrimary,
-        ),
+              bodyColor: AppColors.textPrimary,
+              displayColor: AppColors.textPrimary,
+            ),
       ),
       appBarTheme: AppBarTheme(
         backgroundColor: Colors.transparent,
@@ -194,7 +205,7 @@ class AppTheme {
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         backgroundColor: AppColors.surface,
-        selectedItemColor: AppColors.accent,
+        selectedItemColor: AppColors.textPrimary, // Stark white instead of blue
         unselectedItemColor: AppColors.textMuted,
         type: BottomNavigationBarType.fixed,
       ),
@@ -203,19 +214,24 @@ class AppTheme {
         fillColor: AppColors.surfaceElevated,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: AppColors.surfaceBorder, width: 1),
+          borderSide:
+              const BorderSide(color: AppColors.surfaceBorder, width: 1),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: AppColors.surfaceBorder, width: 1),
+          borderSide:
+              const BorderSide(color: AppColors.surfaceBorder, width: 1),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: AppColors.accent, width: 1.5),
+          borderSide: const BorderSide(
+              color: AppColors.textPrimary,
+              width: 1.5), // White border on focus
         ),
         hintStyle: AppTextStyles.bodyMedium,
         labelStyle: AppTextStyles.labelMedium,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
       ),
       cardTheme: CardThemeData(
         color: AppColors.surface,
@@ -227,11 +243,12 @@ class AppTheme {
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.accent,
-          foregroundColor: AppColors.bg,
+          backgroundColor: AppColors.textPrimary, // Stark white button
+          foregroundColor: AppColors.bg, // Black text
           elevation: 0,
           minimumSize: const Size(double.infinity, 54),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
           textStyle: AppTextStyles.labelLarge.copyWith(color: AppColors.bg),
         ),
       ),

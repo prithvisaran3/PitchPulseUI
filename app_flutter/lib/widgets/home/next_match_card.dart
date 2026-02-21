@@ -8,14 +8,16 @@ import '../common/gradient_badge.dart';
 
 class NextMatchCard extends StatefulWidget {
   final FixtureModel fixture;
+  final VoidCallback? onTap;
 
-  const NextMatchCard({super.key, required this.fixture});
+  const NextMatchCard({super.key, required this.fixture, this.onTap});
 
   @override
   State<NextMatchCard> createState() => _NextMatchCardState();
 }
 
-class _NextMatchCardState extends State<NextMatchCard> with TickerProviderStateMixin {
+class _NextMatchCardState extends State<NextMatchCard>
+    with TickerProviderStateMixin {
   late Timer _timer;
   late AnimationController _ringController;
   late AnimationController _glowController;
@@ -62,146 +64,161 @@ class _NextMatchCardState extends State<NextMatchCard> with TickerProviderStateM
     final f = widget.fixture;
     final countdown = f.timeUntilKickoff;
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: AppConstants.spacingM),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(AppConstants.radiusXL),
-        gradient: const LinearGradient(
-          colors: [Color(0xFF0D1A35), Color(0xFF0A1628)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        border: Border.all(color: AppColors.surfaceBorder, width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.accent.withOpacity(0.1),
-            blurRadius: 30,
-            spreadRadius: -5,
-            offset: const Offset(0, 10),
+    return GestureDetector(
+      onTap: widget.onTap,
+      child: Container(
+        margin: EdgeInsets.zero, // Margins handled by ListView in HomeScreen
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(AppConstants.radiusXL),
+          gradient: const LinearGradient(
+            colors: [Color(0xFF0F0F0F), Color(0xFF050505)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
-        ],
-      ),
-      child: Stack(
-        children: [
-          // Background animated ring
-          Positioned.fill(
-            child: AnimatedBuilder(
-              animation: _ringController,
-              builder: (_, __) => CustomPaint(
-                painter: _RingPainter(_ringController.value),
+          border: Border.all(color: AppColors.surfaceBorder, width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.textPrimary.withValues(alpha: 0.15),
+              blurRadius: 40,
+              spreadRadius: -2,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: Stack(
+          children: [
+            // Background animated ring
+            Positioned.fill(
+              child: AnimatedBuilder(
+                animation: _ringController,
+                builder: (_, __) => CustomPaint(
+                  painter: _RingPainter(_ringController.value),
+                ),
               ),
             ),
-          ),
 
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header row
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('NEXT MATCH', style: AppTextStyles.caption.copyWith(
-                          letterSpacing: 2,
-                          color: AppColors.accent,
-                        )),
-                        const SizedBox(height: 2),
-                        Text(f.competition, style: AppTextStyles.bodySmall),
-                      ],
-                    ),
-                    StatusChip(status: f.status),
-                  ],
-                ),
-
-                const SizedBox(height: 20),
-
-                // Teams + Score
-                Row(
-                  children: [
-                    Expanded(
-                      child: _TeamSection(name: f.homeTeam, isHome: true),
-                    ),
-
-                    // Score or VS
-                    Container(
-                      width: 72,
-                      child: f.isLive || f.isFinished
-                          ? _ScoreDisplay(
-                              home: f.homeScore ?? 0,
-                              away: f.awayScore ?? 0,
-                              isLive: f.isLive,
-                              glowAnim: _glowController,
-                            )
-                          : Text(
-                              'VS',
-                              textAlign: TextAlign.center,
-                              style: AppTextStyles.displaySmall.copyWith(
-                                color: AppColors.textMuted,
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header row
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('NEXT MATCH',
+                              style: AppTextStyles.caption.copyWith(
+                                letterSpacing: 2,
+                                color: Colors.white,
                                 fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                    ),
+                              )),
+                          const SizedBox(height: 2),
+                          Text(f.competition,
+                              style: AppTextStyles.bodySmall
+                                  .copyWith(color: AppColors.textSecondary)),
+                        ],
+                      ),
+                      StatusChip(status: f.status),
+                    ],
+                  ),
 
-                    Expanded(
-                      child: _TeamSection(name: f.awayTeam, isHome: false),
-                    ),
-                  ],
-                ),
+                  const SizedBox(height: 20),
 
-                const SizedBox(height: 20),
-                const Divider(height: 1),
-                const SizedBox(height: 14),
+                  // Teams + Score
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _TeamSection(name: f.homeTeam, isHome: true),
+                      ),
 
-                // Bottom: venue + countdown
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.location_on_rounded, size: 13, color: AppColors.textMuted),
-                        const SizedBox(width: 4),
-                        Text(f.venue, style: AppTextStyles.bodySmall),
-                      ],
-                    ),
-                    if (!f.isFinished)
-                      AnimatedBuilder(
-                        animation: _glowController,
-                        builder: (_, __) => Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: AppColors.accent.withOpacity(0.1 + _glowController.value * 0.08),
-                            borderRadius: BorderRadius.circular(AppConstants.radiusCircle),
-                            border: Border.all(
-                              color: AppColors.accent.withOpacity(0.3 + _glowController.value * 0.2),
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(Icons.timer_outlined, size: 11, color: AppColors.accent),
-                              const SizedBox(width: 5),
-                              Text(
-                                _formatCountdown(countdown),
-                                style: AppTextStyles.monoSmall.copyWith(color: AppColors.accent),
-                              ),
-                            ],
-                          ),
+                      // Score or VS
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        child: SizedBox(
+                          width: 80,
+                          child: f.isLive || f.isFinished
+                              ? _ScoreDisplay(
+                                  home: f.homeScore ?? 0,
+                                  away: f.awayScore ?? 0,
+                                  isLive: f.isLive,
+                                  glowAnim: _glowController,
+                                )
+                              : Text(
+                                  'VS',
+                                  textAlign: TextAlign.center,
+                                  style: AppTextStyles.displaySmall.copyWith(
+                                    color: AppColors.textMuted,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
                         ),
                       ),
-                  ],
-                ),
-              ],
+
+                      Expanded(
+                        child: _TeamSection(name: f.awayTeam, isHome: false),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 20),
+                  const Divider(height: 1),
+                  const SizedBox(height: 14),
+
+                  // Bottom: venue + countdown
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.location_on_rounded,
+                              size: 13, color: AppColors.textMuted),
+                          const SizedBox(width: 4),
+                          Text(f.venue, style: AppTextStyles.bodySmall),
+                        ],
+                      ),
+                      if (!f.isFinished)
+                        AnimatedBuilder(
+                          animation: _glowController,
+                          builder: (_, __) => Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(
+                                  alpha: 0.05 + _glowController.value * 0.05),
+                              borderRadius: BorderRadius.circular(
+                                  AppConstants.radiusCircle),
+                              border: Border.all(
+                                color: Colors.white.withValues(
+                                    alpha: 0.1 + _glowController.value * 0.1),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.timer_outlined,
+                                    size: 11, color: Colors.white),
+                                const SizedBox(width: 5),
+                                Text(
+                                  _formatCountdown(countdown),
+                                  style: AppTextStyles.monoSmall
+                                      .copyWith(color: Colors.white),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
-      ),
-    )
-        .animate()
-        .fadeIn(duration: 600.ms, curve: Curves.easeOut)
-        .slideY(begin: 0.1, end: 0, duration: 600.ms, curve: Curves.elasticOut);
+          ],
+        ),
+      ).animate().fadeIn(duration: 600.ms, curve: Curves.easeOut).slideY(
+          begin: 0.1, end: 0, duration: 600.ms, curve: Curves.elasticOut),
+    );
   }
 }
 
@@ -228,7 +245,7 @@ class _TeamSection extends StatelessWidget {
             child: Text(
               name.substring(0, 2).toUpperCase(),
               style: AppTextStyles.headlineSmall.copyWith(
-                color: AppColors.accent,
+                color: Colors.white,
                 fontWeight: FontWeight.w800,
               ),
             ),
@@ -245,7 +262,9 @@ class _TeamSection extends StatelessWidget {
         if (isHome)
           Padding(
             padding: const EdgeInsets.only(top: 4),
-            child: Text('HOME', style: AppTextStyles.caption.copyWith(color: AppColors.accent)),
+            child: Text('HOME',
+                style:
+                    AppTextStyles.caption.copyWith(color: AppColors.textMuted)),
           ),
       ],
     );
@@ -271,20 +290,24 @@ class _ScoreDisplay extends StatelessWidget {
       animation: glowAnim,
       builder: (_, __) => Column(
         children: [
-          Text(
-            '$home - $away',
-            textAlign: TextAlign.center,
-            style: AppTextStyles.monoLarge.copyWith(
-              color: isLive
-                  ? Color.lerp(AppColors.live, AppColors.accentEnd, glowAnim.value)!
-                  : AppColors.textPrimary,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              '$home - $away',
+              textAlign: TextAlign.center,
+              style: AppTextStyles.monoLarge.copyWith(
+                color: isLive
+                    ? Color.lerp(AppColors.live, Colors.white, glowAnim.value)!
+                    : Colors.white,
+              ),
             ),
           ),
           if (isLive)
-            Text('LIVE', style: AppTextStyles.caption.copyWith(
-              color: AppColors.live,
-              letterSpacing: 2,
-            )),
+            Text('LIVE',
+                style: AppTextStyles.caption.copyWith(
+                  color: AppColors.live,
+                  letterSpacing: 2,
+                )),
         ],
       ),
     );
@@ -303,9 +326,9 @@ class _RingPainter extends CustomPainter {
     for (int i = 0; i < 3; i++) {
       final phase = (progress + i * 0.33) % 1.0;
       final radius = maxRadius * phase;
-      final opacity = (1.0 - phase) * 0.06;
+      final opacity = (1.0 - phase) * 0.04;
       final paint = Paint()
-        ..color = AppColors.accent.withOpacity(opacity)
+        ..color = Colors.white.withValues(alpha: opacity)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.5;
       canvas.drawCircle(center, radius, paint);

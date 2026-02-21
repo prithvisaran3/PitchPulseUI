@@ -7,9 +7,9 @@ class AppConstants {
     defaultValue: 'http://localhost:8000',
   );
 
-  // Demo mode stable IDs (set once backend is ready)
-  static const String demoWorkspaceId = 'demo-workspace-001';
-  static const String demoClubId = 'demo-club-real-madrid';
+  // Roshini's real workspace ID — pre-seeded with Real Madrid squad
+  static const String demoWorkspaceId = 'test-workspace-1';
+  static const String demoClubId = 'real-madrid';
   static const String demoFixtureId = 'demo-fixture-001';
 
   // App metadata

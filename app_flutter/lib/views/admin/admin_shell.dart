@@ -70,7 +70,7 @@ class _AdminNavTile extends StatelessWidget {
             duration: AppConstants.animFast,
             width: 42, height: 32,
             decoration: BoxDecoration(
-              color: isSelected ? AppColors.riskHigh.withOpacity(0.12) : Colors.transparent,
+              color: isSelected ? AppColors.riskHigh.withValues(alpha: 0.12) : Colors.transparent,
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(icon, size: 20, color: isSelected ? AppColors.riskHigh : AppColors.textMuted),
@@ -127,14 +127,14 @@ class _ApprovedCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppConstants.radiusL),
-        border: Border.all(color: AppColors.riskLow.withOpacity(0.2)),
+        border: Border.all(color: AppColors.riskLow.withValues(alpha: 0.2)),
       ),
       child: Row(
         children: [
           Container(
             width: 40, height: 40,
             decoration: BoxDecoration(
-              color: AppColors.riskLow.withOpacity(0.1),
+              color: AppColors.riskLow.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: Center(

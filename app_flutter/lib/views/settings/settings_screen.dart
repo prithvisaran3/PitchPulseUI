@@ -5,6 +5,7 @@ import '../../core/theme.dart';
 import '../../core/constants.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/workspace_provider.dart';
+import '../onboarding/club_select_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -27,7 +28,8 @@ class SettingsScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text('Settings', style: AppTextStyles.displayMedium)
-                        .animate().fadeIn(duration: 400.ms),
+                        .animate()
+                        .fadeIn(duration: 400.ms),
                     const SizedBox(height: AppConstants.spacingL),
 
                     // Profile card
@@ -39,30 +41,62 @@ class SettingsScreen extends StatelessWidget {
                     const SizedBox(height: AppConstants.spacingL),
 
                     // Workspace section
-                    _SectionTitle(title: 'Active Workspace').animate().fadeIn(delay: 150.ms),
+                    _SectionTitle(title: 'Active Workspace')
+                        .animate()
+                        .fadeIn(delay: 150.ms),
                     const SizedBox(height: 10),
-                    if (workspace.activeWorkspace != null)
+                    if (workspace.activeWorkspace != null) ...[
                       _WorkspaceCard(
                         clubName: workspace.activeWorkspace!.clubName,
                         status: workspace.activeWorkspace!.status,
                       ).animate().fadeIn(delay: 200.ms),
+                      const SizedBox(height: 12),
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const ClubSelectScreen(),
+                            ),
+                          );
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 14, horizontal: 16),
+                          decoration: BoxDecoration(
+                            color: AppColors.surfaceElevated
+                                .withValues(alpha: 0.5),
+                            borderRadius:
+                                BorderRadius.circular(AppConstants.radiusL),
+                            border: Border.all(color: AppColors.surfaceBorder),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.search_rounded,
+                                  color: AppColors.textPrimary, size: 18),
+                              const SizedBox(width: 12),
+                              Text('Search & Change Club',
+                                  style: AppTextStyles.labelMedium),
+                              const Spacer(),
+                              const Icon(Icons.chevron_right_rounded,
+                                  color: AppColors.textMuted, size: 20),
+                            ],
+                          ),
+                        ),
+                      ).animate().fadeIn(delay: 220.ms),
+                    ],
 
                     const SizedBox(height: AppConstants.spacingL),
 
                     // Demo mode
-                    _SectionTitle(title: 'Developer').animate().fadeIn(delay: 250.ms),
+                    _SectionTitle(title: 'Developer')
+                        .animate()
+                        .fadeIn(delay: 250.ms),
                     const SizedBox(height: 10),
                     _DemoModeToggle(
                       enabled: auth.demoMode,
                       onToggle: (v) => auth.setDemoMode(v),
                     ).animate().fadeIn(delay: 300.ms),
-
-                    const SizedBox(height: 10),
-                    _SettingsTile(
-                      icon: Icons.api_rounded,
-                      label: 'Backend URL',
-                      subtitle: AppConstants.baseUrl,
-                    ).animate().fadeIn(delay: 350.ms),
 
                     const SizedBox(height: AppConstants.spacingL),
 
@@ -97,7 +131,8 @@ class SettingsScreen extends StatelessWidget {
 
                     // Sign out
                     _SignOutButton(onTap: () => auth.signOut())
-                        .animate().fadeIn(delay: 650.ms),
+                        .animate()
+                        .fadeIn(delay: 650.ms),
 
                     const SizedBox(height: AppConstants.spacingXXL),
                   ],
@@ -131,11 +166,13 @@ class _ProfileCard extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            width: 56, height: 56,
+            width: 56,
+            height: 56,
             decoration: BoxDecoration(
               gradient: isAdmin
                   ? AppColors.gradientHigh
-                  : AppColors.gradientAccent,
+                  : const LinearGradient(
+                      colors: [Color(0xFFFFFFFF), Color(0xFFD4D4D4)]),
               shape: BoxShape.circle,
             ),
             child: Center(
@@ -150,19 +187,27 @@ class _ProfileCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(email, style: AppTextStyles.labelLarge, overflow: TextOverflow.ellipsis),
+                Text(email,
+                    style: AppTextStyles.labelLarge,
+                    overflow: TextOverflow.ellipsis),
                 const SizedBox(height: 4),
                 Row(children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
-                      color: (isAdmin ? AppColors.riskHigh : AppColors.accent).withOpacity(0.12),
-                      borderRadius: BorderRadius.circular(AppConstants.radiusCircle),
+                      color:
+                          (isAdmin ? AppColors.riskHigh : AppColors.textPrimary)
+                              .withValues(alpha: 0.12),
+                      borderRadius:
+                          BorderRadius.circular(AppConstants.radiusCircle),
                     ),
                     child: Text(
                       role.toUpperCase(),
                       style: AppTextStyles.caption.copyWith(
-                        color: isAdmin ? AppColors.riskHigh : AppColors.accent,
+                        color: isAdmin
+                            ? AppColors.riskHigh
+                            : AppColors.textPrimary,
                         letterSpacing: 1,
                       ),
                     ),
@@ -195,7 +240,8 @@ class _WorkspaceCard extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            width: 44, height: 44,
+            width: 44,
+            height: 44,
             decoration: BoxDecoration(
               color: AppColors.surfaceElevated,
               shape: BoxShape.circle,
@@ -203,7 +249,8 @@ class _WorkspaceCard extends StatelessWidget {
             child: Center(
               child: Text(
                 clubName.substring(0, 2).toUpperCase(),
-                style: AppTextStyles.labelMedium.copyWith(color: AppColors.accent),
+                style: AppTextStyles.labelMedium
+                    .copyWith(color: AppColors.textPrimary),
               ),
             ),
           ),
@@ -218,7 +265,9 @@ class _WorkspaceCard extends StatelessWidget {
             ),
           ),
           Icon(
-            isApproved ? Icons.check_circle_rounded : Icons.hourglass_top_rounded,
+            isApproved
+                ? Icons.check_circle_rounded
+                : Icons.hourglass_top_rounded,
             color: isApproved ? AppColors.riskLow : AppColors.riskMed,
             size: 20,
           ),
@@ -234,13 +283,13 @@ class _SectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Text(
-    title.toUpperCase(),
-    style: AppTextStyles.caption.copyWith(
-      color: AppColors.textMuted,
-      letterSpacing: 1.5,
-      fontWeight: FontWeight.w700,
-    ),
-  );
+        title.toUpperCase(),
+        style: AppTextStyles.caption.copyWith(
+          color: AppColors.textMuted,
+          letterSpacing: 1.5,
+          fontWeight: FontWeight.w700,
+        ),
+      );
 }
 
 class _DemoModeToggle extends StatelessWidget {
@@ -257,18 +306,22 @@ class _DemoModeToggle extends StatelessWidget {
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppConstants.radiusL),
         border: Border.all(
-          color: enabled ? AppColors.riskMed.withOpacity(0.4) : AppColors.surfaceBorder,
+          color: enabled
+              ? AppColors.riskMed.withValues(alpha: 0.4)
+              : AppColors.surfaceBorder,
         ),
       ),
       child: Row(
         children: [
           Container(
-            width: 36, height: 36,
+            width: 36,
+            height: 36,
             decoration: BoxDecoration(
-              color: AppColors.riskMed.withOpacity(0.1),
+              color: AppColors.riskMed.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: const Icon(Icons.developer_mode_rounded, color: AppColors.riskMed, size: 18),
+            child: const Icon(Icons.developer_mode_rounded,
+                color: AppColors.riskMed, size: 18),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -276,14 +329,15 @@ class _DemoModeToggle extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('Demo Mode', style: AppTextStyles.labelMedium),
-                Text('Shows "Simulate FT Update" button on Home', style: AppTextStyles.bodySmall),
+                Text('Shows "Simulate FT Update" button on Home',
+                    style: AppTextStyles.bodySmall),
               ],
             ),
           ),
           Switch(
             value: enabled,
             onChanged: onToggle,
-            activeColor: AppColors.riskMed,
+            activeThumbColor: AppColors.riskMed,
           ),
         ],
       ),
@@ -296,7 +350,8 @@ class _SettingsTile extends StatelessWidget {
   final String label;
   final String subtitle;
 
-  const _SettingsTile({required this.icon, required this.label, required this.subtitle});
+  const _SettingsTile(
+      {required this.icon, required this.label, required this.subtitle});
 
   @override
   Widget build(BuildContext context) {
@@ -316,7 +371,10 @@ class _SettingsTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(label, style: AppTextStyles.labelMedium),
-                Text(subtitle, style: AppTextStyles.bodySmall, maxLines: 1, overflow: TextOverflow.ellipsis),
+                Text(subtitle,
+                    style: AppTextStyles.bodySmall,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis),
               ],
             ),
           ),
@@ -334,40 +392,53 @@ class _SignOutButton extends StatefulWidget {
   State<_SignOutButton> createState() => _SignOutButtonState();
 }
 
-class _SignOutButtonState extends State<_SignOutButton> with SingleTickerProviderStateMixin {
+class _SignOutButtonState extends State<_SignOutButton>
+    with SingleTickerProviderStateMixin {
   late AnimationController _ctrl;
 
   @override
   void initState() {
     super.initState();
-    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 120));
+    _ctrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 120));
   }
 
   @override
-  void dispose() { _ctrl.dispose(); super.dispose(); }
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTapDown: (_) => _ctrl.forward(),
-      onTapUp: (_) { _ctrl.reverse(); widget.onTap(); },
+      onTapUp: (_) {
+        _ctrl.reverse();
+        widget.onTap();
+      },
       onTapCancel: () => _ctrl.reverse(),
       child: AnimatedBuilder(
         animation: _ctrl,
-        builder: (_, child) => Transform.scale(scale: 1.0 - _ctrl.value * 0.03, child: child),
+        builder: (_, child) =>
+            Transform.scale(scale: 1.0 - _ctrl.value * 0.03, child: child),
         child: Container(
           height: 52,
           decoration: BoxDecoration(
-            color: AppColors.riskHigh.withOpacity(0.08),
+            color: AppColors.riskHigh.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(AppConstants.radiusL),
-            border: Border.all(color: AppColors.riskHigh.withOpacity(0.3)),
+            border:
+                Border.all(color: AppColors.riskHigh.withValues(alpha: 0.3)),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.logout_rounded, color: AppColors.riskHigh, size: 18),
+              const Icon(Icons.logout_rounded,
+                  color: AppColors.riskHigh, size: 18),
               const SizedBox(width: 10),
-              Text('Sign Out', style: AppTextStyles.labelMedium.copyWith(color: AppColors.riskHigh)),
+              Text('Sign Out',
+                  style: AppTextStyles.labelMedium
+                      .copyWith(color: AppColors.riskHigh)),
             ],
           ),
         ),

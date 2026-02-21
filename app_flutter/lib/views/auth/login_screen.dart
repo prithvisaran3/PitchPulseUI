@@ -13,7 +13,8 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin {
+class _LoginScreenState extends State<LoginScreen>
+    with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _emailCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
@@ -26,9 +27,11 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   @override
   void initState() {
     super.initState();
-    _bgController = AnimationController(vsync: this, duration: const Duration(seconds: 12))
-      ..repeat();
-    _logoController = AnimationController(vsync: this, duration: const Duration(milliseconds: 1200));
+    _bgController =
+        AnimationController(vsync: this, duration: const Duration(seconds: 12))
+          ..repeat();
+    _logoController = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 1200));
     _logoController.forward();
   }
 
@@ -88,7 +91,8 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                     passCtrl: _passCtrl,
                     obscurePass: _obscurePass,
                     isSignUp: _isSignUp,
-                    onToggleObscure: () => setState(() => _obscurePass = !_obscurePass),
+                    onToggleObscure: () =>
+                        setState(() => _obscurePass = !_obscurePass),
                     onToggleMode: () => setState(() => _isSignUp = !_isSignUp),
                     onSubmit: _submit,
                   ),
@@ -121,8 +125,12 @@ class _LogoWidget extends StatelessWidget {
     return AnimatedBuilder(
       animation: controller,
       builder: (_, __) {
-        final scale = CurvedAnimation(parent: controller, curve: const Interval(0, 0.6, curve: Curves.elasticOut));
-        final fade = CurvedAnimation(parent: controller, curve: const Interval(0, 0.4, curve: Curves.easeOut));
+        final scale = CurvedAnimation(
+            parent: controller,
+            curve: const Interval(0, 0.6, curve: Curves.elasticOut));
+        final fade = CurvedAnimation(
+            parent: controller,
+            curve: const Interval(0, 0.4, curve: Curves.easeOut));
         return Transform.scale(
           scale: scale.value,
           child: Opacity(
@@ -134,32 +142,25 @@ class _LogoWidget extends StatelessWidget {
                   height: 88,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    gradient: const LinearGradient(
-                      colors: [AppColors.accent, Color(0xFF6E57FF)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
+                    color: AppColors.surfaceElevated,
+                    border: Border.all(color: AppColors.textPrimary, width: 2),
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.accent.withOpacity(0.4),
+                        color: AppColors.textPrimary.withValues(alpha: 0.1),
                         blurRadius: 30,
                         spreadRadius: 2,
                       ),
                     ],
                   ),
                   child: const Center(
-                    child: Text('⚽', style: TextStyle(fontSize: 38)),
+                    child: Text('⚡', style: TextStyle(fontSize: 38)),
                   ),
                 ),
                 const SizedBox(height: 20),
                 Text(
                   'PitchPulse',
-                  style: AppTextStyles.displayLarge.copyWith(
-                    foreground: Paint()
-                      ..shader = const LinearGradient(
-                        colors: [AppColors.accent, AppColors.accentEnd],
-                      ).createShader(const Rect.fromLTWH(0, 0, 200, 40)),
-                  ),
+                  style: AppTextStyles.displayLarge
+                      .copyWith(color: AppColors.textPrimary),
                 ),
                 const SizedBox(height: 6),
                 Text(
@@ -220,7 +221,9 @@ class _FormCard extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              isSignUp ? 'Set up your coach workspace' : 'Sign in to your workspace',
+              isSignUp
+                  ? 'Set up your coach workspace'
+                  : 'Sign in to your workspace',
               style: AppTextStyles.bodyMedium,
             ),
 
@@ -233,9 +236,12 @@ class _FormCard extends StatelessWidget {
               style: AppTextStyles.bodyLarge,
               decoration: const InputDecoration(
                 labelText: 'Email',
-                prefixIcon: Icon(Icons.email_outlined, color: AppColors.textMuted, size: 18),
+                prefixIcon: Icon(Icons.email_outlined,
+                    color: AppColors.textMuted, size: 18),
               ),
-              validator: (v) => (v == null || !v.contains('@')) ? 'Enter a valid email' : null,
+              validator: (v) => (v == null || !v.contains('@'))
+                  ? 'Enter a valid email'
+                  : null,
             ),
 
             const SizedBox(height: 14),
@@ -247,35 +253,44 @@ class _FormCard extends StatelessWidget {
               style: AppTextStyles.bodyLarge,
               decoration: InputDecoration(
                 labelText: 'Password',
-                prefixIcon: const Icon(Icons.lock_outline, color: AppColors.textMuted, size: 18),
+                prefixIcon: const Icon(Icons.lock_outline,
+                    color: AppColors.textMuted, size: 18),
                 suffixIcon: IconButton(
                   icon: Icon(
-                    obscurePass ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                    obscurePass
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined,
                     color: AppColors.textMuted,
                     size: 18,
                   ),
                   onPressed: onToggleObscure,
                 ),
               ),
-              validator: (v) => (v == null || v.length < 6) ? 'Min 6 characters' : null,
+              validator: (v) =>
+                  (v == null || v.length < 6) ? 'Min 6 characters' : null,
             ),
 
             // Error banner
             if (auth.error != null) ...[
               const SizedBox(height: 14),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                 decoration: BoxDecoration(
-                  color: AppColors.riskHigh.withOpacity(0.12),
+                  color: AppColors.riskHigh.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: AppColors.riskHigh.withOpacity(0.3)),
+                  border:
+                      Border.all(color: AppColors.riskHigh.withValues(alpha: 0.3)),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.error_outline, color: AppColors.riskHigh, size: 16),
+                    const Icon(Icons.error_outline,
+                        color: AppColors.riskHigh, size: 16),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: Text(auth.error!, style: AppTextStyles.bodySmall.copyWith(color: AppColors.riskHigh)),
+                      child: Text(auth.error!,
+                          style: AppTextStyles.bodySmall
+                              .copyWith(color: AppColors.riskHigh)),
                     ),
                   ],
                 ),
@@ -301,12 +316,16 @@ class _FormCard extends StatelessWidget {
                   text: TextSpan(
                     style: AppTextStyles.bodySmall,
                     children: [
-                      TextSpan(text: isSignUp ? 'Already have an account? ' : 'New here? '),
+                      TextSpan(
+                          text: isSignUp
+                              ? 'Already have an account? '
+                              : 'New here? '),
                       TextSpan(
                         text: isSignUp ? 'Sign In' : 'Create Account',
                         style: AppTextStyles.bodySmall.copyWith(
-                          color: AppColors.accent,
-                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.w700,
+                          decoration: TextDecoration.underline,
                         ),
                       ),
                     ],
@@ -317,10 +336,12 @@ class _FormCard extends StatelessWidget {
           ],
         ),
       ),
-    )
-        .animate()
-        .fadeIn(duration: 600.ms, delay: 300.ms)
-        .slideY(begin: 0.2, end: 0, duration: 600.ms, delay: 300.ms, curve: Curves.elasticOut);
+    ).animate().fadeIn(duration: 600.ms, delay: 300.ms).slideY(
+        begin: 0.2,
+        end: 0,
+        duration: 600.ms,
+        delay: 300.ms,
+        curve: Curves.elasticOut);
   }
 }
 
@@ -329,21 +350,25 @@ class _GradientButton extends StatefulWidget {
   final bool loading;
   final VoidCallback onTap;
 
-  const _GradientButton({required this.label, required this.loading, required this.onTap});
+  const _GradientButton(
+      {required this.label, required this.loading, required this.onTap});
 
   @override
   State<_GradientButton> createState() => _GradientButtonState();
 }
 
-class _GradientButtonState extends State<_GradientButton> with SingleTickerProviderStateMixin {
+class _GradientButtonState extends State<_GradientButton>
+    with SingleTickerProviderStateMixin {
   late AnimationController _ctrl;
   late Animation<double> _scale;
 
   @override
   void initState() {
     super.initState();
-    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 120));
-    _scale = Tween(begin: 1.0, end: 0.97).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeIn));
+    _ctrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 120));
+    _scale = Tween(begin: 1.0, end: 0.97)
+        .animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeIn));
   }
 
   @override
@@ -356,35 +381,43 @@ class _GradientButtonState extends State<_GradientButton> with SingleTickerProvi
   Widget build(BuildContext context) {
     return GestureDetector(
       onTapDown: (_) => _ctrl.forward(),
-      onTapUp: (_) { _ctrl.reverse(); if (!widget.loading) widget.onTap(); },
+      onTapUp: (_) {
+        _ctrl.reverse();
+        if (!widget.loading) widget.onTap();
+      },
       onTapCancel: () => _ctrl.reverse(),
       child: AnimatedBuilder(
         animation: _scale,
-        builder: (_, child) => Transform.scale(scale: _scale.value, child: child),
+        builder: (_, child) =>
+            Transform.scale(scale: _scale.value, child: child),
         child: Container(
           height: 54,
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [AppColors.accent, Color(0xFF6E57FF)],
-              begin: Alignment.centerLeft,
-              end: Alignment.centerRight,
-            ),
+            color: widget.loading
+                ? AppColors.surfaceElevated
+                : AppColors.textPrimary,
             borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: AppColors.textPrimary, width: 2),
             boxShadow: [
-              BoxShadow(
-                color: AppColors.accent.withOpacity(0.35),
-                blurRadius: 20,
-                offset: const Offset(0, 6),
-              ),
+              if (!widget.loading)
+                BoxShadow(
+                  color: AppColors.textPrimary.withValues(alpha: 0.1),
+                  blurRadius: 20,
+                  offset: const Offset(0, 6),
+                ),
             ],
           ),
           child: Center(
             child: widget.loading
                 ? const SizedBox(
-                    width: 22, height: 22,
-                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(
+                        color: AppColors.textPrimary, strokeWidth: 2.5),
                   )
-                : Text(widget.label, style: AppTextStyles.labelLarge.copyWith(color: Colors.white)),
+                : Text(widget.label,
+                    style:
+                        AppTextStyles.labelLarge.copyWith(color: AppColors.bg)),
           ),
         ),
       ),
@@ -406,9 +439,15 @@ class _BgPainter extends CustomPainter {
     );
 
     final orbs = [
-      _Orb(x: 0.15, y: 0.25, r: 0.35, phase: 0, color: const Color(0xFF4FACFE)),
-      _Orb(x: 0.85, y: 0.65, r: 0.3, phase: 0.5, color: const Color(0xFF6E57FF)),
-      _Orb(x: 0.5, y: 0.85, r: 0.25, phase: 0.25, color: const Color(0xFF00F2FE)),
+      _Orb(x: 0.15, y: 0.25, r: 0.35, phase: 0, color: const Color(0xFF1A1A1A)),
+      _Orb(
+          x: 0.85, y: 0.65, r: 0.3, phase: 0.5, color: const Color(0xFF262626)),
+      _Orb(
+          x: 0.5,
+          y: 0.85,
+          r: 0.25,
+          phase: 0.25,
+          color: const Color(0xFF141414)),
     ];
 
     for (final orb in orbs) {
@@ -421,7 +460,7 @@ class _BgPainter extends CustomPainter {
         center,
         radius,
         Paint()
-          ..color = orb.color.withOpacity(0.07)
+          ..color = orb.color.withValues(alpha: 0.07)
           ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 80),
       );
     }
@@ -434,5 +473,10 @@ class _BgPainter extends CustomPainter {
 class _Orb {
   final double x, y, r, phase;
   final Color color;
-  const _Orb({required this.x, required this.y, required this.r, required this.phase, required this.color});
+  const _Orb(
+      {required this.x,
+      required this.y,
+      required this.r,
+      required this.phase,
+      required this.color});
 }

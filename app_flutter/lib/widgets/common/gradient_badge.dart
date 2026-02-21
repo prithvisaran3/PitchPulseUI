@@ -34,7 +34,7 @@ class RiskBadge extends StatelessWidget {
         boxShadow: isHigh
             ? [
                 BoxShadow(
-                  color: AppColors.riskHigh.withOpacity(0.4),
+                  color: AppColors.riskHigh.withValues(alpha: 0.4),
                   blurRadius: 12,
                   spreadRadius: 1,
                 ),
@@ -119,9 +119,9 @@ class StatusChip extends StatelessWidget {
     Widget chip = Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: _color.withOpacity(0.15),
+        color: _color.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(AppConstants.radiusCircle),
-        border: Border.all(color: _color.withOpacity(0.5), width: 1),
+        border: Border.all(color: _color.withValues(alpha: 0.5), width: 1),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

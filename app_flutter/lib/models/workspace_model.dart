@@ -26,7 +26,7 @@ class WorkspaceModel {
         clubName: json['club_name'] as String,
         clubCrestUrl: json['club_crest_url'] as String?,
         status: json['status'] as String? ?? 'pending',
-        managerId: json['manager_id'] as String,
+        managerId: json['manager_id'] as String? ?? 'unknown',
         createdAt: json['created_at'] != null
             ? DateTime.tryParse(json['created_at'] as String)
             : null,
@@ -58,7 +58,8 @@ class ClubSearchResult {
     this.founded,
   });
 
-  factory ClubSearchResult.fromJson(Map<String, dynamic> json) => ClubSearchResult(
+  factory ClubSearchResult.fromJson(Map<String, dynamic> json) =>
+      ClubSearchResult(
         id: json['id'] as String,
         name: json['name'] as String,
         country: json['country'] as String?,
@@ -67,10 +68,30 @@ class ClubSearchResult {
       );
 
   static List<ClubSearchResult> demoResults() => [
-        const ClubSearchResult(id: 'real-madrid', name: 'Real Madrid', country: 'Spain', founded: 1902),
-        const ClubSearchResult(id: 'barcelona', name: 'FC Barcelona', country: 'Spain', founded: 1899),
-        const ClubSearchResult(id: 'man-city', name: 'Manchester City', country: 'England', founded: 1880),
-        const ClubSearchResult(id: 'psg', name: 'Paris Saint-Germain', country: 'France', founded: 1970),
-        const ClubSearchResult(id: 'bayern', name: 'Bayern Munich', country: 'Germany', founded: 1900),
+        const ClubSearchResult(
+            id: 'real-madrid',
+            name: 'Real Madrid',
+            country: 'Spain',
+            founded: 1902),
+        const ClubSearchResult(
+            id: 'barcelona',
+            name: 'FC Barcelona',
+            country: 'Spain',
+            founded: 1899),
+        const ClubSearchResult(
+            id: 'man-city',
+            name: 'Manchester City',
+            country: 'England',
+            founded: 1880),
+        const ClubSearchResult(
+            id: 'psg',
+            name: 'Paris Saint-Germain',
+            country: 'France',
+            founded: 1970),
+        const ClubSearchResult(
+            id: 'bayern',
+            name: 'Bayern Munich',
+            country: 'Germany',
+            founded: 1900),
       ];
 }

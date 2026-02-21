@@ -3,6 +3,7 @@
 import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
 import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, kIsWeb, TargetPlatform;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 /// Default [FirebaseOptions] for use with your Firebase apps.
 ///
@@ -52,12 +53,12 @@ class DefaultFirebaseOptions {
     }
   }
 
-  static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyAkPgf6zzDVhZr0IXAQy6BnQCedGXfFg0I',
-    appId: '1:388171499823:ios:7b91b75042148cb946f9da',
-    messagingSenderId: '388171499823',
-    projectId: 'pitchpulse-hack2026',
-    storageBucket: 'pitchpulse-hack2026.firebasestorage.app',
-    iosBundleId: 'com.pitchpulse.pitchpulse',
-  );
+  static FirebaseOptions get ios => FirebaseOptions(
+        apiKey: dotenv.env['FIREBASE_API_KEY_IOS'] ?? '',
+        appId: '1:388171499823:ios:7b91b75042148cb946f9da',
+        messagingSenderId: '388171499823',
+        projectId: 'pitchpulse-hack2026',
+        storageBucket: 'pitchpulse-hack2026.firebasestorage.app',
+        iosBundleId: 'com.pitchpulse.pitchpulse',
+      );
 }

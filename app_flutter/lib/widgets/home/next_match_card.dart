@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'dart:ui';
 import '../../core/theme.dart';
 import '../../core/constants.dart';
 import '../../models/fixture_model.dart';
 import '../common/gradient_badge.dart';
+import '../common/glass_card.dart';
 
 class NextMatchCard extends StatefulWidget {
   final FixtureModel fixture;
@@ -66,28 +68,31 @@ class _NextMatchCardState extends State<NextMatchCard>
 
     return GestureDetector(
       onTap: widget.onTap,
-      child: Container(
-        margin: EdgeInsets.zero, // Margins handled by ListView in HomeScreen
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(AppConstants.radiusXL),
-          gradient: const LinearGradient(
-            colors: [Color(0xFF0F0F0F), Color(0xFF050505)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          border: Border.all(color: AppColors.surfaceBorder, width: 1),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.textPrimary.withValues(alpha: 0.15),
-              blurRadius: 40,
-              spreadRadius: -2,
-              offset: const Offset(0, 10),
-            ),
-          ],
-        ),
+      child: GlassCard(
+        padding: EdgeInsets.zero,
+        borderRadius: AppConstants.radiusXL,
+        backgroundColor: AppColors.surface.withValues(alpha: 0.4),
+        borderColor: AppColors.textPrimary.withValues(alpha: 0.1),
         child: Stack(
           children: [
-            // Background animated ring
+            // Subtle premium glow in the background
+            Positioned(
+              top: -40,
+              right: -40,
+              child: Container(
+                width: 120,
+                height: 120,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.riskLow.withValues(alpha: 0.08),
+                ),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
+                  child: Container(color: Colors.transparent),
+                ),
+              ),
+            ),
+            // Background animated ring (Subtler)
             Positioned.fill(
               child: AnimatedBuilder(
                 animation: _ringController,
@@ -216,8 +221,8 @@ class _NextMatchCardState extends State<NextMatchCard>
             ),
           ],
         ),
-      ).animate().fadeIn(duration: 600.ms, curve: Curves.easeOut).slideY(
-          begin: 0.1, end: 0, duration: 600.ms, curve: Curves.elasticOut),
+      ).animate().fadeIn(duration: 800.ms, curve: Curves.easeOutExpo).slideY(
+          begin: 0.05, end: 0, duration: 800.ms, curve: Curves.easeOutExpo),
     );
   }
 }

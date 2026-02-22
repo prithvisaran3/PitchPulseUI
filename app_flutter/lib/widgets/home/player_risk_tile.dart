@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'dart:ui';
 import '../../core/theme.dart';
 import '../../core/constants.dart';
 import '../../models/player_model.dart';
@@ -25,7 +26,6 @@ class _PlayerRiskTileState extends State<PlayerRiskTile>
     with SingleTickerProviderStateMixin {
   late AnimationController _pressController;
   late Animation<double> _pressScale;
-  late Animation<double> _tiltX;
 
   @override
   void initState() {
@@ -37,9 +37,6 @@ class _PlayerRiskTileState extends State<PlayerRiskTile>
     _pressScale = Tween<double>(begin: 1.0, end: 0.95).animate(
       CurvedAnimation(parent: _pressController, curve: Curves.easeInOut),
     );
-    _tiltX = Tween<double>(begin: 0, end: 0.03).animate(
-      CurvedAnimation(parent: _pressController, curve: Curves.easeInOut),
-    );
   }
 
   @override
@@ -48,30 +45,17 @@ class _PlayerRiskTileState extends State<PlayerRiskTile>
     super.dispose();
   }
 
-  Color get _borderColor {
-    switch (widget.player.riskBand.toUpperCase()) {
-      case 'HIGH':
-        return AppColors.riskHigh.withValues(alpha: 0.5);
-      case 'MED':
-        return AppColors.riskMed.withValues(alpha: 0.4);
-      default:
-        return AppColors.surfaceBorder;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final p = widget.player;
     final isHigh = p.riskBand.toUpperCase() == 'HIGH';
+    final riskColor = AppColors.colorForRisk(p.riskBand);
 
     return AnimatedBuilder(
       animation: _pressController,
       builder: (_, child) => Transform.scale(
         scale: _pressScale.value,
-        child: Transform(
-          transform: Matrix4.identity()..rotateX(_tiltX.value),
-          child: child,
-        ),
+        child: child,
       ),
       child: GestureDetector(
         onTapDown: (_) => _pressController.forward(),
@@ -82,101 +66,156 @@ class _PlayerRiskTileState extends State<PlayerRiskTile>
         onTapCancel: () => _pressController.reverse(),
         child: Container(
           decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(AppConstants.radiusL),
-            border: Border.all(color: _borderColor, width: 1.5),
-            boxShadow: isHigh
-                ? [
-                    BoxShadow(
-                      color: AppColors.riskHigh.withValues(alpha: 0.15),
-                      blurRadius: 16,
-                      spreadRadius: -2,
-                    ),
-                  ]
-                : null,
+            borderRadius: BorderRadius.circular(AppConstants.radiusXL),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                AppColors.surface.withValues(alpha: 0.8),
+                AppColors.surface.withValues(alpha: 0.4),
+              ],
+            ),
+            border: Border.all(
+              color: riskColor.withValues(alpha: 0.3),
+              width: 1.5,
+            ),
+            boxShadow: [
+              if (isHigh)
+                BoxShadow(
+                  color: riskColor.withValues(alpha: 0.2),
+                  blurRadius: 20,
+                  spreadRadius: -5,
+                  offset: const Offset(0, 8),
+                ),
+            ],
           ),
-          padding: const EdgeInsets.all(14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Top: jersey + position
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(AppConstants.radiusXL),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+              child: Stack(
                 children: [
-                  Container(
-                    width: 34,
-                    height: 34,
-                    decoration: BoxDecoration(
-                      gradient: AppColors.gradientForRisk(p.riskBand),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Center(
-                      child: Text(
-                        p.jerseyNumber?.toString() ?? '?',
-                        style: AppTextStyles.labelMedium.copyWith(
-                          color: Colors.black,
-                          fontWeight: FontWeight.w800,
-                        ),
+                  // Subtle glow in the background of the card
+                  Positioned(
+                    top: -20,
+                    right: -20,
+                    child: Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: riskColor.withValues(alpha: 0.15),
+                      ),
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                        child: Container(color: Colors.transparent),
                       ),
                     ),
                   ),
-                  Text(
-                    p.position,
-                    style: AppTextStyles.caption.copyWith(
-                      color: AppColors.textMuted,
-                      letterSpacing: 1,
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Top: position & readiness
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                p.position,
+                                style: AppTextStyles.labelMedium.copyWith(
+                                  color: riskColor,
+                                  letterSpacing: 1.2,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: AppColors.surfaceElevated
+                                    .withValues(alpha: 0.8),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                    color: AppColors.surfaceBorder
+                                        .withValues(alpha: 0.5)),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.bolt_rounded,
+                                      size: 12, color: AppColors.textPrimary),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '${p.readinessScore}%',
+                                    style: AppTextStyles.labelSmall
+                                        .copyWith(color: AppColors.textPrimary),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 12),
+
+                        // Name
+                        Text(
+                          p.name,
+                          style: AppTextStyles.headlineMedium.copyWith(
+                            fontWeight: FontWeight.w800,
+                            height: 1.2,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+
+                        const Spacer(),
+
+                        // Sparkline
+                        if (p.riskSparkline.isNotEmpty)
+                          SizedBox(
+                            height: 36,
+                            child: CustomPaint(
+                              painter: _SparklinePainter(
+                                data: p.riskSparkline,
+                                color: riskColor,
+                              ),
+                              size: const Size(double.infinity, 36),
+                            ),
+                          ),
+
+                        const SizedBox(height: 16),
+
+                        // Bottom row: Risk Badge
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text('Risk Level', style: AppTextStyles.caption),
+                            RiskBadge(
+                              band: p.riskBand,
+                              score: p.riskScore,
+                              pulse: isHigh,
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
-
-              const SizedBox(height: 10),
-
-              // Name
-              Text(
-                p.name,
-                style: AppTextStyles.labelMedium,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-
-              const SizedBox(height: 8),
-
-              // Sparkline
-              if (p.riskSparkline.isNotEmpty)
-                SizedBox(
-                  height: 28,
-                  child: CustomPaint(
-                    painter: _SparklinePainter(
-                      data: p.riskSparkline,
-                      color: AppColors.colorForRisk(p.riskBand),
-                    ),
-                    size: const Size(double.infinity, 28),
-                  ),
-                ),
-
-              const Spacer(),
-              const SizedBox(height: 8),
-
-              // Readiness (Prioritized)
-              ReadinessBadge(score: p.readinessScore, small: true),
-
-              const SizedBox(height: 5),
-
-              // Risk badge
-              RiskBadge(
-                band: p.riskBand,
-                score: p.riskScore,
-                pulse: isHigh,
-              ),
-            ],
+            ),
           ),
         ),
       ),
     )
         .animate(delay: Duration(milliseconds: widget.animationIndex * 60))
-        .fadeIn(duration: 500.ms, curve: Curves.easeOut)
-        .slideY(begin: 0.2, end: 0, duration: 500.ms, curve: Curves.elasticOut);
+        .fadeIn(duration: 600.ms, curve: Curves.easeOutExpo)
+        .slideY(
+            begin: 0.15, end: 0, duration: 600.ms, curve: Curves.easeOutExpo);
   }
 }
 
@@ -196,14 +235,14 @@ class _SparklinePainter extends CustomPainter {
 
     final paint = Paint()
       ..color = color
-      ..strokeWidth = 1.5
+      ..strokeWidth = 2.0
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;
 
     final fillPaint = Paint()
       ..shader = LinearGradient(
-        colors: [color.withValues(alpha: 0.3), color.withValues(alpha: 0)],
+        colors: [color.withValues(alpha: 0.25), color.withValues(alpha: 0)],
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
       ).createShader(Rect.fromLTWH(0, 0, size.width, size.height))
@@ -215,7 +254,10 @@ class _SparklinePainter extends CustomPainter {
 
     for (int i = 0; i < data.length; i++) {
       final x = i * step;
+      // Invert Y so higher risk is higher up
       final y = size.height - ((data[i] - min) / range) * size.height;
+
+      // Add slight curve smoothing
       if (i == 0) {
         path.moveTo(x, y);
         fillPath.moveTo(x, size.height);
@@ -232,10 +274,22 @@ class _SparklinePainter extends CustomPainter {
     canvas.drawPath(fillPath, fillPaint);
     canvas.drawPath(path, paint);
 
-    // Last dot
+    // Last dot indicator
     final lastX = (data.length - 1) * step;
     final lastY = size.height - ((data.last - min) / range) * size.height;
-    canvas.drawCircle(Offset(lastX, lastY), 3, Paint()..color = color);
+
+    canvas.drawCircle(
+        Offset(lastX, lastY),
+        4,
+        Paint()
+          ..color = AppColors.surface
+          ..style = PaintingStyle.fill);
+    canvas.drawCircle(
+        Offset(lastX, lastY),
+        3.5,
+        Paint()
+          ..color = color
+          ..style = PaintingStyle.fill);
   }
 
   @override

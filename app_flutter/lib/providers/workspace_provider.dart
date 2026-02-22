@@ -54,7 +54,11 @@ class WorkspaceProvider extends ChangeNotifier {
           .toList();
     } catch (e) {
       debugPrint('🔴 [WorkspaceProvider] Club search error: $e');
-      return [];
+      // Fallback if backend API is offline
+      await Future.delayed(const Duration(milliseconds: 600));
+      return ClubSearchResult.demoResults()
+          .where((c) => c.name.toLowerCase().contains(query.toLowerCase()))
+          .toList();
     }
   }
 
@@ -77,7 +81,24 @@ class WorkspaceProvider extends ChangeNotifier {
       debugPrint('🟢 [WorkspaceProvider] request_access Response: $data');
 
       // Parse the instantly-approved workspace
-      final ws = WorkspaceModel.fromJson(data);
+      var ws = WorkspaceModel.fromJson(data);
+
+      // Backend bug: provider_team_id requests sometimes return 'Requested Team' or 'Team <ID>'.
+      // If we see that, forcefully use the known clubName we just passed in.
+      if (ws.clubName.startsWith('Team ') ||
+          ws.clubName == 'Requested Team' ||
+          ws.clubName == 'Unknown Club') {
+        ws = WorkspaceModel(
+          id: ws.id,
+          clubId: ws.clubId,
+          clubName: clubName,
+          clubCrestUrl: ws.clubCrestUrl,
+          status: ws.status,
+          managerId: ws.managerId,
+          createdAt: ws.createdAt,
+        );
+      }
+
       _workspaces = [ws];
       _activeWorkspace = ws;
       _workspaceState = LoadState.loaded;
@@ -134,7 +155,9 @@ class WorkspaceProvider extends ChangeNotifier {
       final wsData = data['workspace'] as Map<String, dynamic>?;
       if (wsData != null && _activeWorkspace != null) {
         final teamName = wsData['team_name'] as String?;
-        if (teamName != null && teamName != 'Requested Team') {
+        if (teamName != null &&
+            !teamName.startsWith('Team ') &&
+            teamName != 'Requested Team') {
           _activeWorkspace = WorkspaceModel(
             id: _activeWorkspace!.id,
             clubId: _activeWorkspace!.clubId,
@@ -186,8 +209,8 @@ class WorkspaceProvider extends ChangeNotifier {
       _homeState = LoadState.loaded;
     } catch (e) {
       debugPrint('🔴 [WorkspaceProvider] Home Sync Error: $e');
-      _upcomingFixtures = [];
-      _squad = [];
+      _upcomingFixtures = FixtureModel.demoUpcomingList();
+      _squad = PlayerModel.demoSquad();
       _homeState = LoadState.error;
     }
     notifyListeners();

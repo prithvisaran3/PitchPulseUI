@@ -30,6 +30,12 @@ class WorkspaceProvider extends ChangeNotifier {
   bool _simulating = false;
   String? _error;
 
+  // Guard against concurrent loadHome calls for the same workspace
+  String? _loadingHomeId;
+
+  // Track workspaces that have already been auto-synced so we don't loop.
+  final Set<String> _autoSyncedIds = {};
+
   // Getters
   List<WorkspaceModel> get workspaces => _workspaces;
   WorkspaceModel? get activeWorkspace => _activeWorkspace;
@@ -43,23 +49,13 @@ class WorkspaceProvider extends ChangeNotifier {
   bool get simulating => _simulating;
   String? get error => _error;
 
-  // ── Club Search ─────────────────────────────────────────────────────────────
+  // ── Club Search (local filter — backend has no search endpoint) ────────────
   Future<List<ClubSearchResult>> searchClubs(String query) async {
-    try {
-      final data =
-          await _api.get('/clubs/search?q=${Uri.encodeComponent(query)}');
-      final list = data as List<dynamic>;
-      return list
-          .map((e) => ClubSearchResult.fromJson(e as Map<String, dynamic>))
-          .toList();
-    } catch (e) {
-      debugPrint('🔴 [WorkspaceProvider] Club search error: $e');
-      // Fallback if backend API is offline
-      await Future.delayed(const Duration(milliseconds: 600));
-      return ClubSearchResult.demoResults()
-          .where((c) => c.name.toLowerCase().contains(query.toLowerCase()))
-          .toList();
-    }
+    await Future.delayed(const Duration(milliseconds: 200));
+    final q = query.toLowerCase();
+    return ClubSearchResult.demoResults()
+        .where((c) => c.name.toLowerCase().contains(q))
+        .toList();
   }
 
   // ── Request Access ──────────────────────────────────────────────────────────
@@ -143,6 +139,10 @@ class WorkspaceProvider extends ChangeNotifier {
 
   // ── Load Home ───────────────────────────────────────────────────────────────
   Future<void> loadHome(String workspaceId) async {
+    // Prevent duplicate in-flight requests for the same workspace.
+    if (_loadingHomeId == workspaceId) return;
+    _loadingHomeId = workspaceId;
+
     _homeState = LoadState.loading;
     notifyListeners();
     try {
@@ -151,17 +151,23 @@ class WorkspaceProvider extends ChangeNotifier {
       debugPrint(
           '🟢 [WorkspaceProvider] Home Sync Response for ws=$workspaceId: $data');
 
-      // Update workspace club name from home response if available
+      // Update workspace club name from home response if available.
+      // Use WorkspaceModel.fromJson so placeholder names like "Team 529" are
+      // automatically resolved to the real club name via providerTeamId lookup.
       final wsData = data['workspace'] as Map<String, dynamic>?;
       if (wsData != null && _activeWorkspace != null) {
-        final teamName = wsData['team_name'] as String?;
-        if (teamName != null &&
-            !teamName.startsWith('Team ') &&
-            teamName != 'Requested Team') {
+        final resolved = WorkspaceModel.fromJson({
+          ...wsData,
+          'status': wsData['status'] ?? _activeWorkspace!.status,
+          'manager_id': _activeWorkspace!.managerId,
+        });
+        // Only update if we got a better name (not a placeholder).
+        if (resolved.clubName != 'Unknown Club' &&
+            resolved.clubName != _activeWorkspace!.clubName) {
           _activeWorkspace = WorkspaceModel(
             id: _activeWorkspace!.id,
             clubId: _activeWorkspace!.clubId,
-            clubName: teamName,
+            clubName: resolved.clubName,
             clubCrestUrl: _activeWorkspace!.clubCrestUrl,
             status: _activeWorkspace!.status,
             managerId: _activeWorkspace!.managerId,
@@ -185,6 +191,14 @@ class WorkspaceProvider extends ChangeNotifier {
           FixtureModel.fromJson(
               data['next_fixture'] as Map<String, dynamic>, effectiveTeamName)
         ];
+      }
+
+      // If the backend has no fixture data for this approved workspace, show
+      // demo fixtures branded with the workspace's team name so the UI is
+      // always populated and the Suggested XI feature is accessible.
+      if (_upcomingFixtures.isEmpty && _activeWorkspace?.status == 'approved') {
+        _upcomingFixtures = _buildDemoFixturesFor(effectiveTeamName);
+        debugPrint('🟡 [WorkspaceProvider] No fixtures from backend — using local demo for $effectiveTeamName');
       }
 
       // Parse recent fixtures to populate reports
@@ -213,14 +227,59 @@ class WorkspaceProvider extends ChangeNotifier {
       _squad = PlayerModel.demoSquad();
       _homeState = LoadState.error;
     }
+    _loadingHomeId = null;
     notifyListeners();
+
+    // If this workspace has no fixtures yet and hasn't been auto-synced,
+    // trigger an initial sync to populate demo fixtures from the API.
+    final isApproved = _activeWorkspace?.status == 'approved';
+    if (isApproved &&
+        _upcomingFixtures.isEmpty &&
+        !_autoSyncedIds.contains(workspaceId)) {
+      _autoSyncedIds.add(workspaceId);
+      debugPrint('🟡 [WorkspaceProvider] No fixtures for $workspaceId — triggering initial sync');
+      try {
+        final ok = await _api.triggerInitialSync(workspaceId);
+        if (ok) {
+          debugPrint('🟢 [WorkspaceProvider] Initial sync done for $workspaceId — reloading');
+          await loadHome(workspaceId);
+        }
+      } catch (e) {
+        debugPrint('🔴 [WorkspaceProvider] Initial sync error for $workspaceId: $e');
+      }
+    }
+  }
+
+  /// Builds a short list of demo upcoming fixtures for teams that have no
+  /// real fixture data in the backend yet (newly approved workspaces).
+  List<FixtureModel> _buildDemoFixturesFor(String teamName) {
+    final now = DateTime.now();
+    final opponents = ['Arsenal', 'Bayern Munich', 'PSG', 'Juventus', 'Chelsea'];
+    return List.generate(3, (i) {
+      final isHome = i.isEven;
+      return FixtureModel(
+        id: 'demo-fixture-${teamName.hashCode}-$i',
+        homeTeam: isHome ? teamName : opponents[i],
+        awayTeam: isHome ? opponents[i] : teamName,
+        kickoff: now.add(Duration(days: (i + 1) * 7 - 2)),
+        status: 'NS',
+        competition: 'League',
+        venue: isHome ? 'Home Stadium' : '${opponents[i]} Stadium',
+      );
+    });
   }
 
   Future<Map<String, dynamic>> generateSuggestedXi(
       String workspaceId, Map<String, dynamic> payload) async {
     try {
-      final data = await _api.post('/workspaces/$workspaceId/suggested-xi',
-          body: payload) as Map<String, dynamic>;
+      // AI endpoint — single attempt with a short timeout so the UI can
+      // fall back to local XI selection quickly if the backend is slow.
+      final data = await _api.post(
+        '/workspaces/$workspaceId/suggested-xi',
+        body: payload,
+        timeout: const Duration(seconds: 10),
+        maxRetries: 0,
+      ) as Map<String, dynamic>;
       debugPrint('🟢 [WorkspaceProvider] Suggested XI Response: $data');
       return data;
     } catch (e) {
@@ -234,7 +293,7 @@ class WorkspaceProvider extends ChangeNotifier {
     _adminState = LoadState.loading;
     notifyListeners();
     try {
-      final data = await _api.get('/admin/workspaces/pending') as List<dynamic>;
+      final data = await _api.get('/admin/requests') as List<dynamic>;
       debugPrint('🟢 [WorkspaceProvider] Pending Admin Requests: $data');
       _pendingRequests = data
           .map((e) => WorkspaceModel.fromJson(e as Map<String, dynamic>))

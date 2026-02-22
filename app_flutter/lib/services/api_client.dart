@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -18,6 +20,9 @@ class ApiClient {
   static final ApiClient _instance = ApiClient._();
   factory ApiClient() => _instance;
   ApiClient._();
+
+  static const _maxRetries = 2;
+  static const _retryDelay = Duration(seconds: 1);
 
   final _client = http.Client();
 
@@ -47,40 +52,110 @@ class ApiClient {
     }
   }
 
+  bool _isRetryable(Object e) {
+    if (e is SocketException) return true;
+    if (e is HttpException) return true;
+    if (e is TimeoutException) return true;
+    // http.ClientException wraps SocketExceptions with message strings
+    final msg = e.toString().toLowerCase();
+    return msg.contains('connection closed') ||
+        msg.contains('connection reset') ||
+        msg.contains('connection refused') ||
+        msg.contains('socketexception') ||
+        msg.contains('clientexception');
+  }
+
+  ApiException _mapToApiException(Object e) {
+    final msg = e.toString().toLowerCase();
+    if (msg.contains('no internet') ||
+        msg.contains('network is unreachable') ||
+        e is SocketException) {
+      return const ApiException(statusCode: 0, message: 'No internet connection');
+    }
+    return ApiException(statusCode: 0, message: 'Network error — please retry');
+  }
+
   Future<dynamic> get(String path) async {
     final headers = await _authHeaders();
     final base = await baseUrl;
     final uri = Uri.parse('$base$path');
-    try {
-      final res = await _client.get(uri, headers: headers).timeout(
-            const Duration(seconds: 15),
-          );
-      return _handle(res);
-    } on SocketException {
-      throw const ApiException(
-          statusCode: 0, message: 'No internet connection');
-    } on HttpException {
-      throw const ApiException(statusCode: 0, message: 'Network error');
+
+    for (var attempt = 0; attempt <= _maxRetries; attempt++) {
+      try {
+        final res = await _client
+            .get(uri, headers: headers)
+            .timeout(const Duration(seconds: 15));
+        return _handle(res);
+      } catch (e) {
+        if (e is ApiException) rethrow;
+        if (_isRetryable(e) && attempt < _maxRetries) {
+          debugPrint(
+              '⚠️ [ApiClient] GET $path attempt ${attempt + 1} failed ($e), retrying...');
+          await Future.delayed(_retryDelay);
+          continue;
+        }
+        throw _mapToApiException(e);
+      }
     }
+    throw const ApiException(statusCode: 0, message: 'Request failed');
   }
 
-  Future<dynamic> post(String path, {Map<String, dynamic>? body}) async {
+  Future<dynamic> post(
+    String path, {
+    Map<String, dynamic>? body,
+    Duration timeout = const Duration(seconds: 20),
+    int? maxRetries,
+  }) async {
     final headers = await _authHeaders();
     final base = await baseUrl;
     final uri = Uri.parse('$base$path');
-    try {
-      final res = await _client
-          .post(uri,
-              headers: headers, body: body != null ? jsonEncode(body) : null)
-          .timeout(const Duration(seconds: 20));
-      return _handle(res);
-    } on SocketException {
-      throw const ApiException(
-          statusCode: 0, message: 'No internet connection');
+    final retries = maxRetries ?? _maxRetries;
+
+    for (var attempt = 0; attempt <= retries; attempt++) {
+      try {
+        final res = await _client
+            .post(uri,
+                headers: headers, body: body != null ? jsonEncode(body) : null)
+            .timeout(timeout);
+        return _handle(res);
+      } catch (e) {
+        if (e is ApiException) rethrow;
+        if (_isRetryable(e) && attempt < retries) {
+          debugPrint(
+              '⚠️ [ApiClient] POST $path attempt ${attempt + 1} failed ($e), retrying...');
+          await Future.delayed(_retryDelay);
+          continue;
+        }
+        throw _mapToApiException(e);
+      }
     }
+    throw const ApiException(statusCode: 0, message: 'Request failed');
   }
 
-  /// Trigger Roshini's initial data sync to populate the workspace.
+  /// Multipart POST with retry — used for video uploads.
+  Future<http.Response> postMultipart(
+    String path,
+    Future<http.MultipartRequest> Function() buildRequest,
+  ) async {
+    for (var attempt = 0; attempt <= _maxRetries; attempt++) {
+      try {
+        final req = await buildRequest();
+        final streamed =
+            await req.send().timeout(const Duration(seconds: 60));
+        return await http.Response.fromStream(streamed);
+      } catch (e) {
+        if (_isRetryable(e) && attempt < _maxRetries) {
+          debugPrint(
+              '⚠️ [ApiClient] MULTIPART $path attempt ${attempt + 1} failed ($e), retrying...');
+          await Future.delayed(_retryDelay);
+          continue;
+        }
+        throw _mapToApiException(e);
+      }
+    }
+    throw const ApiException(statusCode: 0, message: 'Upload failed');
+  }
+
   Future<bool> triggerInitialSync(String workspaceId) async {
     try {
       await post('/sync/workspace/$workspaceId/initial?use_demo=true');

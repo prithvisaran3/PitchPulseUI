@@ -108,6 +108,30 @@ class _ClubSelectScreenState extends State<ClubSelectScreen> {
                         onPressed: () => Navigator.pop(context),
                       ),
                     ),
+                  // App logo
+                  Row(
+                    children: [
+                      ColorFiltered(
+                        colorFilter: const ColorFilter.mode(
+                          Colors.white,
+                          BlendMode.srcIn,
+                        ),
+                        child: Image.asset(
+                          'assets/icon.png',
+                          width: 36,
+                          height: 36,
+                          fit: BoxFit.contain,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Text('PitchPulse',
+                              style: AppTextStyles.headlineSmall
+                                  .copyWith(color: AppColors.textPrimary))
+                          .animate()
+                          .fadeIn(duration: 400.ms),
+                    ],
+                  ).animate().fadeIn(duration: 400.ms),
+                  const SizedBox(height: 16),
                   Text('Select Club', style: AppTextStyles.displayMedium)
                       .animate()
                       .fadeIn(duration: 400.ms)

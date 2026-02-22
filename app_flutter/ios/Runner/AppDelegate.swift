@@ -12,5 +12,10 @@ import UIKit
 
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
+
+    // Register Presage biometrics platform channel
+    if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "PresagePlugin") {
+      PresagePlugin.register(with: registrar)
+    }
   }
 }

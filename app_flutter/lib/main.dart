@@ -10,6 +10,7 @@ import 'providers/auth_provider.dart';
 import 'providers/workspace_provider.dart';
 import 'providers/player_provider.dart';
 import 'core/route_observer.dart';
+import 'services/presage_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -29,6 +30,10 @@ void main() async {
 
   await dotenv.load(fileName: ".env");
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // Dismiss any Presage native screen left on top after a hot restart.
+  // This is a no-op when no overlay is present.
+  await PresageService.dismissIfPresented();
 
   runApp(const PitchPulseApp());
 }

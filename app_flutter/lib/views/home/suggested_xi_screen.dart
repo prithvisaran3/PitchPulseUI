@@ -43,21 +43,22 @@ class _SuggestedXIScreenState extends State<SuggestedXIScreen> {
     final opponent = isHome ? widget.fixture.awayTeam : widget.fixture.homeTeam;
 
     try {
+      // Deduplicate squad first so we send clean data to the AI.
+      final seenSquadIds = <String>{};
+      final cleanSquad =
+          squad.where((p) => seenSquadIds.add(p.id)).toList();
+
       final payload = {
         'opponent': opponent,
         'match_context':
             '${isHome ? "Home" : "Away"}, ${widget.fixture.competition}',
-        'available_squad': squad
+        'available_squad': cleanSquad
             .map((p) => {
                   'id': p.id,
                   'name': p.name,
-                  'position': p.position,
+                  'position': _toApiPosition(p.position),
                   'readiness': p.readinessScore.round(),
-                  'form': p.readinessBand == 'LOW'
-                      ? 'Excellent'
-                      : p.readinessBand == 'MED'
-                          ? 'Good'
-                          : 'Poor',
+                  'risk': p.riskScore.round(),
                 })
             .toList(),
       };
@@ -69,34 +70,115 @@ class _SuggestedXIScreenState extends State<SuggestedXIScreen> {
       final xiIds = (data['starting_xi_ids'] as List<dynamic>? ?? [])
           .map((e) => e.toString())
           .toList();
+      final benchIdsFromApi = (data['bench_ids'] as List<dynamic>?)
+          ?.map((e) => e.toString())
+          .toSet();
       final rationales =
           (data['player_rationales'] as Map<String, dynamic>? ?? {})
               .map((k, v) => MapEntry(k, v.toString()));
 
-      // Build starting XI from IDs returned by AI
-      final idToPlayer = {for (var p in squad) p.id: p};
+      // Deduplicate squad by ID before building maps.
+      final seenIds = <String>{};
+      final uniqueSquad =
+          squad.where((p) => seenIds.add(p.id)).toList();
+
+      final idToPlayer = {for (var p in uniqueSquad) p.id: p};
       final aiXI = xiIds
           .where((id) => idToPlayer.containsKey(id))
           .map((id) => idToPlayer[id]!)
           .toList();
 
       if (aiXI.length >= 7) {
-        // Enough valid players matched — use AI result
+        final xiIdSet = {for (var p in aiXI) p.id};
         _currentFormation = bestFormation;
         _aiTacticalAnalysis = analysis;
         _startingXI = aiXI.take(11).toList();
-        _bench = squad.where((p) => !_startingXI.contains(p)).toList();
+
+        // Prefer bench_ids from AI if provided; otherwise exclude XI by ID.
+        if (benchIdsFromApi != null && benchIdsFromApi.isNotEmpty) {
+          _bench = benchIdsFromApi
+              .where((id) => idToPlayer.containsKey(id) && !xiIdSet.contains(id))
+              .map((id) => idToPlayer[id]!)
+              .toList()
+            ..sort((a, b) => b.readinessScore.compareTo(a.readinessScore));
+        } else {
+          _bench = uniqueSquad
+              .where((p) => !xiIdSet.contains(p.id))
+              .toList()
+            ..sort((a, b) => b.readinessScore.compareTo(a.readinessScore));
+        }
         _playerRationales = rationales;
-        _bench.sort((a, b) => b.readinessScore.compareTo(a.readinessScore));
-      } else {
-        throw Exception("Failed to match squad IDs");
+        if (mounted) setState(() => _isLoading = false);
+        return;
       }
+      // AI returned too few valid IDs — fall through to local builder.
     } catch (_) {
-      _aiTacticalAnalysis =
-          "Error reaching the Gemini proxy. Please check your backend connection.";
+      // Timeout, network error, or bad response — fall through.
     }
 
+    // ── Local fallback: pick best XI by readiness & position ─────────────────
+    _buildLocalXI(squad, opponent);
     if (mounted) setState(() => _isLoading = false);
+  }
+
+  /// Maps a full position name to the short code expected by the API.
+  String _toApiPosition(String pos) {
+    final s = pos.toLowerCase();
+    if (s.contains('goalkeeper') || s == 'gk') return 'GK';
+    if (s.contains('defender') || s.contains('back') ||
+        s == 'def' || s == 'cb' || s == 'lb' || s == 'rb') return 'DEF';
+    if (s.contains('midfield') || s == 'mid' ||
+        s == 'cm' || s == 'dm' || s == 'am') return 'MID';
+    return 'FW';
+  }
+
+  /// Builds a complete starting XI from the squad using readiness scores,
+  /// filling positions as best as possible in a 4-3-3 shape.
+  /// Uses player IDs for deduplication — PlayerModel has no == override.
+  void _buildLocalXI(List<PlayerModel> squad, String opponent) {
+    // Deduplicate the squad itself first (API can return the same player twice).
+    final seen = <String>{};
+    final unique = squad.where((p) => seen.add(p.id)).toList()
+      ..sort((a, b) => b.readinessScore.compareTo(a.readinessScore));
+
+    final xiIds = <String>{};
+    final xi    = <PlayerModel>[];
+
+    void tryAdd(PlayerModel p) {
+      if (!xiIds.contains(p.id) && xi.length < 11) {
+        xiIds.add(p.id);
+        xi.add(p);
+      }
+    }
+
+    bool pos(PlayerModel p, List<String> keywords) {
+      final s = p.position.toLowerCase();
+      return keywords.any((k) => s.contains(k));
+    }
+
+    final gks  = unique.where((p) => pos(p, ['goalkeeper', 'gk'])).toList();
+    final defs = unique.where((p) => pos(p, ['defender', 'back', ' cb', 'lb', 'rb', 'def']) && !pos(p, ['goalkeeper', 'gk'])).toList();
+    final mids = unique.where((p) => pos(p, ['midfielder', 'midfield', 'mid', 'cm', 'dm', 'am']) && !pos(p, ['goalkeeper', 'gk', 'defender', 'back'])).toList();
+    final fwds = unique.where((p) => pos(p, ['forward', 'attacker', 'winger', 'striker', 'fw', 'lw', 'rw', 'cf', 'st']) && !pos(p, ['goalkeeper', 'gk', 'defender', 'back', 'midfield'])).toList();
+
+    // 1 GK → 4 DEF → 3 MID → 3 FWD
+    gks.take(1).forEach(tryAdd);
+    defs.take(4).forEach(tryAdd);
+    mids.take(3).forEach(tryAdd);
+    fwds.take(3).forEach(tryAdd);
+
+    // Fill any remaining slots with the highest-readiness players not yet picked.
+    if (xi.length < 11) {
+      unique.where((p) => !xiIds.contains(p.id)).take(11 - xi.length).forEach(tryAdd);
+    }
+
+    _currentFormation = '4-3-3';
+    _aiTacticalAnalysis =
+        'Lineup built from current readiness data — players selected for '
+        'peak physical availability ahead of the match vs $opponent.';
+    _startingXI = xi;
+    // Bench: everyone not in the starting XI, deduplicated by ID.
+    _bench = unique.where((p) => !xiIds.contains(p.id)).toList();
   }
 
   void _showPlayerSheet(PlayerModel player) {
@@ -338,21 +420,32 @@ class _PitchMap extends StatelessWidget {
   List<Widget> _buildPlayerNodes() {
     if (startingXI.isEmpty) return [];
 
-    // Sort into buckets roughly for 4-3-3
-    final gks = startingXI.where((p) => p.position == 'GK').toList();
-    final dfs = startingXI
-        .where((p) => p.position.endsWith('B') || p.position == 'DEF')
-        .toList();
-    final mfs = startingXI
-        .where((p) => p.position.endsWith('M') || p.position == 'MID')
-        .toList();
-    final fws = startingXI
-        .where((p) =>
-            p.position.endsWith('T') ||
-            p.position.endsWith('W') ||
-            p.position == 'CF' ||
-            p.position == 'FW')
-        .toList();
+    // Matches both abbreviations (GK, CB, LB…) and full API names (Goalkeeper, Defender…)
+    bool isGK(PlayerModel p) {
+      final s = p.position.toLowerCase();
+      return s == 'gk' || s.contains('goalkeeper');
+    }
+    bool isDef(PlayerModel p) {
+      final s = p.position.toLowerCase();
+      return s.endsWith('b') || s == 'def' ||
+          s.contains('defender') || s.contains('back');
+    }
+    bool isMid(PlayerModel p) {
+      final s = p.position.toLowerCase();
+      return s.endsWith('m') || s == 'mid' || s.contains('midfield');
+    }
+    bool isFwd(PlayerModel p) {
+      final s = p.position.toLowerCase();
+      return s.endsWith('t') || s.endsWith('w') ||
+          s == 'cf' || s == 'fw' ||
+          s.contains('forward') || s.contains('attack') ||
+          s.contains('winger') || s.contains('striker');
+    }
+
+    final gks = startingXI.where(isGK).toList();
+    final dfs = startingXI.where((p) => !isGK(p) && isDef(p)).toList();
+    final mfs = startingXI.where((p) => !isGK(p) && !isDef(p) && isMid(p)).toList();
+    final fws = startingXI.where((p) => !isGK(p) && !isDef(p) && !isMid(p) && isFwd(p)).toList();
 
     // Parse formation logic
     final parts = formation.split('-');
@@ -465,7 +558,9 @@ class _PositionedPlayer extends StatelessWidget {
               height: 38,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: AppColors.gradientForRisk(player.riskBand),
+                gradient: player.photoUrl == null
+                    ? AppColors.gradientForRisk(player.riskBand)
+                    : null,
                 border: Border.all(color: Colors.white, width: 1.5),
                 boxShadow: [
                   BoxShadow(
@@ -475,12 +570,29 @@ class _PositionedPlayer extends StatelessWidget {
                   ),
                 ],
               ),
-              child: Center(
-                child: Text(
-                  player.jerseyNumber?.toString() ?? '?',
-                  style: AppTextStyles.labelMedium.copyWith(
-                      color: Colors.black, fontWeight: FontWeight.bold),
-                ),
+              child: ClipOval(
+                child: player.photoUrl != null
+                    ? Image.network(
+                        player.photoUrl!,
+                        width: 38,
+                        height: 38,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Center(
+                          child: Text(
+                            player.jerseyNumber?.toString() ?? '?',
+                            style: AppTextStyles.labelMedium.copyWith(
+                                color: Colors.black,
+                                fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      )
+                    : Center(
+                        child: Text(
+                          player.jerseyNumber?.toString() ?? '?',
+                          style: AppTextStyles.labelMedium.copyWith(
+                              color: Colors.black, fontWeight: FontWeight.bold),
+                        ),
+                      ),
               ),
             ),
             const SizedBox(height: 4),

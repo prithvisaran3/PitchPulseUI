@@ -23,11 +23,25 @@ class WorkspaceModel {
   factory WorkspaceModel.fromJson(Map<String, dynamic> json) {
     // Roshini's backend returns `team_name` instead of `club_name`,
     // and doesn't send `club_id` or `manager_id`.
-    final clubName =
+    var clubName =
         (json['club_name'] ?? json['team_name'] ?? 'Unknown Club') as String;
+    final providerTeamId = json['provider_team_id'] as int?;
     final clubId = (json['club_id'] ??
         json['provider_team_id']?.toString() ??
         'unknown') as String;
+
+    // The backend returns placeholder names like "Team 529" or "Requested Team"
+    // when it hasn't synced the real club name yet. Resolve the actual name
+    // from the local club catalogue using the provider team ID.
+    if ((clubName.startsWith('Team ') || clubName == 'Requested Team' || clubName == 'Unknown Club') &&
+        providerTeamId != null) {
+      final known = ClubSearchResult.demoResults()
+          .where((c) => c.providerTeamId == providerTeamId)
+          .map((c) => c.name)
+          .firstOrNull;
+      if (known != null) clubName = known;
+    }
+
     return WorkspaceModel(
       id: json['id'] as String,
       clubId: clubId,

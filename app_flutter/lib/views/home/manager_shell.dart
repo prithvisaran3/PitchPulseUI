@@ -9,7 +9,6 @@ import '../../providers/workspace_provider.dart';
 import 'home_screen.dart';
 // Replace ClubSelectScreen with the new CheckInScreen once it's created.
 import '../check_in/check_in_screen.dart';
-import '../reports/reports_screen.dart';
 import '../settings/settings_screen.dart';
 
 class ManagerShell extends StatefulWidget {
@@ -26,8 +25,7 @@ class _ManagerShellState extends State<ManagerShell>
 
   final _screens = const [
     HomeScreen(),
-    CheckInScreen(), // New Check-In Tab
-    ReportsScreen(),
+    CheckInScreen(),
     SettingsScreen(),
   ];
 
@@ -100,7 +98,6 @@ class _FloatingNavBar extends StatelessWidget {
     final items = [
       _NavItem(icon: Icons.home_rounded, label: 'Home'),
       _NavItem(icon: Icons.assignment_turned_in_rounded, label: 'Check-In'),
-      _NavItem(icon: Icons.bar_chart_rounded, label: 'Reports'),
       _NavItem(icon: Icons.settings_rounded, label: 'Settings'),
     ];
 

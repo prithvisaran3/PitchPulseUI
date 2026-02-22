@@ -34,8 +34,13 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final ws = context.read<WorkspaceProvider>().activeWorkspace;
-      if (ws != null) context.read<WorkspaceProvider>().loadHome(ws.id);
+      final wp = context.read<WorkspaceProvider>();
+      // Only load home if it hasn't already been loaded or is actively loading
+      // (loadWorkspaces already calls loadHome — avoid the duplicate call)
+      if (wp.activeWorkspace != null &&
+          wp.homeState == LoadState.idle) {
+        wp.loadHome(wp.activeWorkspace!.id);
+      }
     });
   }
 
@@ -702,7 +707,9 @@ class _TopRiskPlayers extends StatelessWidget {
                         height: 44,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          gradient: AppColors.gradientForRisk('HIGH'),
+                          gradient: p.photoUrl == null
+                              ? AppColors.gradientForRisk('HIGH')
+                              : null,
                           boxShadow: [
                             BoxShadow(
                                 color:
@@ -711,13 +718,39 @@ class _TopRiskPlayers extends StatelessWidget {
                                 offset: const Offset(0, 2))
                           ],
                         ),
-                        child: Center(
-                          child: Text(
-                            p.name.split(' ').map((w) => w[0]).take(2).join(),
-                            style: AppTextStyles.labelMedium.copyWith(
-                                color: Colors.black,
-                                fontWeight: FontWeight.bold),
-                          ),
+                        child: ClipOval(
+                          child: p.photoUrl != null
+                              ? Image.network(
+                                  p.photoUrl!,
+                                  width: 44,
+                                  height: 44,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => Center(
+                                    child: Text(
+                                      p.name
+                                          .split(' ')
+                                          .map((w) => w[0])
+                                          .take(2)
+                                          .join(),
+                                      style: AppTextStyles.labelMedium
+                                          .copyWith(
+                                              color: Colors.black,
+                                              fontWeight: FontWeight.bold),
+                                    ),
+                                  ),
+                                )
+                              : Center(
+                                  child: Text(
+                                    p.name
+                                        .split(' ')
+                                        .map((w) => w[0])
+                                        .take(2)
+                                        .join(),
+                                    style: AppTextStyles.labelMedium.copyWith(
+                                        color: Colors.black,
+                                        fontWeight: FontWeight.bold),
+                                  ),
+                                ),
                         ),
                       ),
                       const SizedBox(width: 14),

@@ -46,16 +46,36 @@ class PlayerXIBottomSheet extends StatelessWidget {
                   height: 50,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    gradient: AppColors.gradientForRisk(player.riskBand),
+                    gradient: player.photoUrl == null
+                        ? AppColors.gradientForRisk(player.riskBand)
+                        : null,
                   ),
-                  child: Center(
-                    child: Text(
-                      player.jerseyNumber?.toString() ?? '?',
-                      style: AppTextStyles.headlineSmall.copyWith(
-                        color: Colors.black,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
+                  child: ClipOval(
+                    child: player.photoUrl != null
+                        ? Image.network(
+                            player.photoUrl!,
+                            width: 50,
+                            height: 50,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Center(
+                              child: Text(
+                                player.jerseyNumber?.toString() ?? '?',
+                                style: AppTextStyles.headlineSmall.copyWith(
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ),
+                          )
+                        : Center(
+                            child: Text(
+                              player.jerseyNumber?.toString() ?? '?',
+                              style: AppTextStyles.headlineSmall.copyWith(
+                                color: Colors.black,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
                   ),
                 ),
                 const SizedBox(width: 16),

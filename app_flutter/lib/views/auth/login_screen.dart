@@ -153,8 +153,19 @@ class _LogoWidget extends StatelessWidget {
                       ),
                     ],
                   ),
-                  child: const Center(
-                    child: Text('⚡', style: TextStyle(fontSize: 38)),
+                  child: Center(
+                    child: ColorFiltered(
+                      colorFilter: const ColorFilter.mode(
+                        Colors.white,
+                        BlendMode.srcIn,
+                      ),
+                      child: Image.asset(
+                        'assets/icon.png',
+                        width: 52,
+                        height: 52,
+                        fit: BoxFit.contain,
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 20),
